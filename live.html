@@ -627,6 +627,10 @@
             var target = $(e.target).attr("href") // activated tab
             $(target).show();
             });
+	    window.setTimeout(function() 
+		    { 
+		       updateTables();
+		    }, 3000);
       });
 
       var {board, pvBoardw, pvBoardb, pvBoarda, pvBoardwc, pvBoardbc} = setBoardInit();
