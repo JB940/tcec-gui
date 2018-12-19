@@ -1725,14 +1725,14 @@ function getLinkArch(gameNumber)
 {
    var retLink;
 
-   retLink = "http://tcec.chessdom.com/archive.php";
+   retLink = "#";
 
    return (retLink);
 }
 
 function openCross(gamen)
 {
-   var link = "http://legacy-tcec.chessdom.com/archive.php?se=14&di=1&ga=" + gamen;
+   var link = "#" + gamen;
    window.open(link,'_blank');
 }
 
