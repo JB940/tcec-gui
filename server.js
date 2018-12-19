@@ -29,8 +29,8 @@ var app = express();
 //app.use(express.static(__dirname));
 
 var options = {
-   //key: fs.readFileSync('/etc/letsencrypt/live/tcecbonus.club/privkey.pem'),
-   //cert: fs.readFileSync('/etc/letsencrypt/live/tcecbonus.club/fullchain.pem')   
+   key: fs.readFileSync('/etc/letsencrypt/live/chess.webphactory.net/privkey.pem'),
+   cert: fs.readFileSync('/etc/letsencrypt/live/chess.webphactory.net/fullchain.pem')   
 };
 
 var server = https.createServer(options, app).listen(parseInt(portnum), function() {
