@@ -1938,18 +1938,19 @@ function setPieces(piece, value, whiteToPlay) {
   }
 }
 
-function getLinkArch(gameNumber) 
+function getLinkArch() 
 {
    var retLink;
 
    retLink = "http://tcec.chessdom.com/archive.php";
+   retLink = "https://cd.tcecbeta.club/archive.html";
 
    return (retLink);
 }
 
 function openCross(gamen)
 {
-   var link = "http://legacy-tcec.chessdom.com/archive.php";
+   var link = getLinkArch();
    var season = 1;
    var div = "di";
    var divno = 1;
@@ -1964,7 +1965,8 @@ function openCross(gamen)
          div = engine;
       }
    });
-   link = link + "?se=" + season + "&" + div + "&ga=" + gamen;
+   //link = link + "?se=" + season + "&" + div + "&ga=" + gamen;
+   link = link + "?season=" + season + "&" + div + "&game=" + gamen;
    window.open(link,'_blank');
 }
 

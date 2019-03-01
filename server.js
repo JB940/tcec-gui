@@ -12,6 +12,7 @@ var _ = require('lodash');
 var lastPgnTime = Date.now();
 
 const pid = process.pid;
+const exec = require('child_process').exec;
 
 if (typeof process.argv[2] == 'undefined')
 {
@@ -150,6 +151,66 @@ function userCount()
 function userCountActual()
 {
    return (parseInt(socketArray.length));
+}
+
+function getPGN(id, menuData)
+{
+   var found = 0;
+   var retPgn = {};
+   var data = menuData;
+
+   _.each(data.Seasons, function(value, key) {
+      if (found)
+      {
+         return false;
+      }
+      _.each(value.sub, function(subvalue,subkey) {
+         if ((subvalue.id == id) ||
+            (subvalue.idf == id))
+         {
+            retPgn.abb = subvalue.abb;
+            retPgn.pgnfile = subvalue.abb + ".pgn";
+            retPgn.scjson  = subvalue.abb + "_Schedule.json";
+            retPgn.download = value.download;
+            retPgn.url = subvalue.url;
+            found = 0;
+            return false;
+         }
+      });
+   });
+
+   return retPgn;
+}
+
+var pgnDir = '/var/www/json/archive/'
+var json = '/var/www/json/archive/';
+var archroot = '/var/www/cd.tcecbeta.club/';
+var gameJson = archroot + 'gamelist.json';
+var singlePerl = archroot + 'single.pl';
+var tag = null;
+var pgnFile = null;
+
+function checkLatestArchive()
+{
+   const jsonMenuData = JSON.parse(fs.readFileSync(gameJson, "utf-8"));
+   var retPgn = getPGN('current', jsonMenuData);
+   console.log ("retPgn: " + JSON.stringify(retPgn));
+
+   if (retPgn.found == 0)
+   {
+      return 0;
+   }
+
+   tag = retPgn.abb;
+   pgnFile = pgnDir + retPgn.pgnfile;
+
+   return (pgnFile);
+}
+
+if (checkLatestArchive())
+{
+   console.log ("Adding pgnfile:" + pgnFile);
+   watcher.add(pgnFile);
 }
 
 io.sockets.on ('connection', function(socket){    
@@ -305,6 +366,7 @@ var prevevalData1 = 0;
 var prevCrossData = 0;
 var prevSchedData = 0;
 var delta = {};
+var inprogress = 0;
 
 watcher.on('change', (path, stats) => {
    if (0)
@@ -313,63 +375,85 @@ watcher.on('change', (path, stats) => {
                    " ,actual count is:" + parseInt(userCountActual() * userCountFactor) + 
                    " ,server is :" + pid);
    }
-   var content = fs.readFileSync(path, "utf8");
-   try 
+   if (path == pgnFile)
    {
-      var data = JSON.parse(content);
-      if (path.match(/data.json/))
+      console.log ("Need to do something about pgnfile");
+      if (inprogress == 0)
       {
-         broadCastData(socket, 'liveeval', path, data, prevliveData);
-         prevliveData = data;
+         inprogress = 1;
+         exec("perl " + singlePerl + ' ' + tag + ' ' + json + tag, function(err, stdout, stderr) {
+            console.log ("Doing it:" + stdout + stderr);
+            setTimeout(function() {
+               io.emit('refreshsched', {'count': 1});
+            }, 15000);
+         inprogress = 0;
+      });
       }
-      if (path.match(/data1.json/))
+      else
       {
-         broadCastData(socket, 'liveeval1', path, data, prevliveData1);
-         prevliveData1 = data;
-      }
-      if (path.match(/liveeval.json/))
-      {
-         broadCastData(socket, 'livechart', path, data, prevevalData);
-         prevevalData = data;
-      }
-      if (path.match(/liveeval1.json/))
-      {
-         broadCastData(socket, 'livechart1', path, data, prevevalData1);
-         prevevalData1 = data;
-      }
-      if (path.match(/live.json/))
-      {
-         console.log ("json changed");
-         var changed = checkSend(data, prevData);
-         if (changed)
-         {
-            delta = getDeltaPgn(data, prevData);
-            //broadCastData(socket, 'pgn', path, delta, delta);
-            io.local.emit('pgn', delta); 
-            console.log ("Sent pgn data:" + JSON.stringify(delta).length + ",orig" + JSON.stringify(data).length + ",changed" + delta.Users);
-            lastPgnTime = Date.now(); 
-         }
-         prevData = data;
-      }
-      if (path.match(/crosstable/))
-      {
-         broadCastData(socket, 'crosstable', path, data, prevCrossData);
-         prevCrossData = data;
-      }
-      if (path.match(/schedule/))
-      {
-         broadCastData(socket, 'schedule', path, data, prevSchedData);
-         prevSchedData = data;
-      }
-      if (path.match(/banner/))
-      {
-         io.local.emit('banner', data); 
+         console.log ("Already another in progress");
       }
    }
-   catch (error) 
+   else
    {
-      console.log ("error: " + error);
-      return;
+      var content = fs.readFileSync(path, "utf8");
+      try 
+      {
+         var data = JSON.parse(content);
+         if (path.match(/data.json/))
+         {
+            broadCastData(socket, 'liveeval', path, data, prevliveData);
+            prevliveData = data;
+         }
+         if (path.match(/data1.json/))
+         {
+            broadCastData(socket, 'liveeval1', path, data, prevliveData1);
+            prevliveData1 = data;
+         }
+         if (path.match(/liveeval.json/))
+         {
+            broadCastData(socket, 'livechart', path, data, prevevalData);
+            prevevalData = data;
+         }
+         if (path.match(/liveeval1.json/))
+         {
+            broadCastData(socket, 'livechart1', path, data, prevevalData1);
+            prevevalData1 = data;
+         }
+         if (path.match(/live.json/))
+         {
+            console.log ("json changed");
+            var changed = checkSend(data, prevData);
+            if (changed)
+            {
+               delta = getDeltaPgn(data, prevData);
+               //broadCastData(socket, 'pgn', path, delta, delta);
+               io.local.emit('pgn', delta); 
+               console.log ("Sent pgn data:" + JSON.stringify(delta).length + ",orig" + JSON.stringify(data).length + ",changed" + delta.Users);
+               lastPgnTime = Date.now(); 
+            }
+            prevData = data;
+         }
+         if (path.match(/crosstable/))
+         {
+            broadCastData(socket, 'crosstable', path, data, prevCrossData);
+            prevCrossData = data;
+         }
+         if (path.match(/schedule/))
+         {
+            broadCastData(socket, 'schedule', path, data, prevSchedData);
+            prevSchedData = data;
+         }
+         if (path.match(/banner/))
+         {
+            io.local.emit('banner', data); 
+         }
+      }
+      catch (error) 
+      {
+         console.log ("error: " + error);
+         return;
+      }
    }
 });
 
