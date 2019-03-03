@@ -47,6 +47,7 @@ var timeDiff = 0;
 var timeDiffRead = 0;
 var prevPgnData = 0;
 var playSound = 1;
+var globalGameno = 1;
 
 var liveEngineEval1 = [];
 var liveEngineEval2 = [];
@@ -1508,18 +1509,21 @@ function handlePlyChange(handleclick)
    /* Arun: we should get move from ply - 1 as index starts at 0 */
    currentMove = getMoveFromPly(activePly - 1);
 
-   var prevMove = getMoveFromPly(activePly - 2);
-   for (var yy = 1 ; yy <= livePVHist.length ; yy ++)
+   if (activePly > 1)
    {
-      if (livePVHist[yy])
+      var prevMove = getMoveFromPly(activePly - 2);
+      for (var yy = 1 ; yy <= livePVHist.length ; yy ++)
       {
-         for (var xx = 0 ; xx < livePVHist[yy].moves.length ; xx ++)
+         if (livePVHist[yy])
          {
-            if (parseInt(livePVHist[yy].moves[xx].ply) == activePly)
+            for (var xx = 0 ; xx < livePVHist[yy].moves.length ; xx ++)
             {
-               livePVHist[yy].moves[xx].engine = livePVHist[yy].engine;
-               updateLiveEvalData(livePVHist[yy].moves[xx], 0, prevMove.fen, yy, 0);
-               break;
+               if (parseInt(livePVHist[yy].moves[xx].ply) == activePly)
+               {
+                  livePVHist[yy].moves[xx].engine = livePVHist[yy].engine;
+                  updateLiveEvalData(livePVHist[yy].moves[xx], 0, prevMove.fen, yy, 0);
+                  break;
+               }
             }
          }
       }
@@ -1954,6 +1958,7 @@ function openCross(gamen)
    var season = 1;
    var div = "di";
    var divno = 1;
+   globalGameno = gamen;
 
    _.each(tourInfo, function(engine, key) {
       if (key == "season")
@@ -1968,6 +1973,7 @@ function openCross(gamen)
    //link = link + "?se=" + season + "&" + div + "&ga=" + gamen;
    link = link + "?season=" + season + "&" + div + "&game=" + gamen;
    window.open(link,'_blank');
+   scheduleHighlight();
 }
 
 function openLinks(link)
@@ -2877,6 +2883,8 @@ function updateScheduleData(scdatainput)
       if (typeof engine.Moves != 'undefined')
       {
          gamesDone = engine.Game;
+         globalGameno = gamesDone;
+         engine.agame = engine.Game;
          engine.Game = '<a title="TBD" style="cursor:pointer; color: ' + gameArrayClass[3] + ';"onclick="openCross(' + engine.Game + ')">' + engine.Game + '</a>';
       }
       engine.FixWhite = engine.White;
@@ -2903,11 +2911,33 @@ function updateScheduleData(scdatainput)
    });
 
    $('#schedule').bootstrapTable('load', scdata);
-   var options = $('#schedule').bootstrapTable('getOptions');
-   pageNum = parseInt(gamesDone/options.pageSize) + 1;
-   $('#schedule').bootstrapTable('selectPage', pageNum);
+   $("#schedule").on("click-cell.bs.table", function (field, value, row, $el) {                                                                                                                       
+      openCross($el.agame);                                                                                                                                                                     
+   }); 
+   scheduleHighlight();
 }
 
+function scheduleHighlight(noscroll)                                                                                                                                                                  
+{                                                                                                                                                                                                     
+   var options = $('#schedule').bootstrapTable('getOptions');                                                                                                                                         
+   var classSet = 'blacktds';                                                                                                                                                                         
+   pageNum = parseInt(globalGameno/options.pageSize) + 1;                                                                                                                                             
+   $('#schedule').bootstrapTable('selectPage', pageNum);                                                                                                                                              
+   var index = globalGameno - (pageNum - 1) * options.pageSize;                                                                                                                                       
+   var top = 0;                                                                                                                                                                                       
+   $('#schedule').find('tbody tr').each(function (i) {                                                                                                                                                
+      if (i < index) {                                                                                                                                                                                
+         top += $(this).height();                                                                                                                                                                     
+         }                                                                                                                                                                                            
+      });                                                                                                                                                                                             
+   if (!darkMode)                                                                                                                                                                                     
+   {                                                                                                                                                                                                  
+      classSet = 'whitetds';                                                                                                                                                                          
+   }                                                                                                                                                                                                  
+   $('#schedule tr').removeClass(classSet);                                                                                                                                                           
+   $('#schedule tr:eq('+index+')').addClass(classSet);                                                                                                                                                
+}                                                                                                                                                                                                     
+          
 function updateWinnersData(winnerData) 
 {
    plog ("Updating winners:", 0);

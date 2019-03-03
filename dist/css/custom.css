@@ -497,3 +497,28 @@ canvas {
 max-width: 900px;
 }
 
+table.table.table-striped tr.whitetd td
+{
+   background-color:#82CAFA;
+}
+
+table.gamelistclass tr:hover
+{
+   cursor:pointer;
+}
+
+table.schedulelistclass tr:hover                                                                                                                                                                      
+{                                                                                                                                                                                                     
+   cursor:pointer;                                                                                                                                                                                    
+}      
+
+table.table.table-striped tr.blacktds td                                                                                                                                                              
+{                                                                                                                                                                                                     
+   background-color:rgba(105, 105, 105, 0.6);                                                                                                                                                         
+}                                                                                                                                                                                                     
+                                                                                                                                                                                                      
+table.table.table-striped tr.whitetds td                                                                                                                                                              
+{                                                                                                                                                                                                     
+   background-color:#82CAFA;                                                                                                                                                                          
+}                                                                                                                                                                                                     
+                     
