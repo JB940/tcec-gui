@@ -572,6 +572,21 @@ function setPgn(pgn)
     updateEnginePv('black', whiteToPlay, blackEval.pv);
   }
 
+  if (whiteToPlay) 
+  {
+     if (pgn.Headers.WhiteTimeControl)
+     {
+        pgn.Headers.TimeControl = pgn.Headers.WhiteTimeControl;
+     }
+  }
+  else
+  {
+     if (pgn.Headers.BlackTimeControl)
+     {
+        pgn.Headers.TimeControl = pgn.Headers.BlackTimeControl;
+     }
+  }
+
   var TC = pgn.Headers.TimeControl.split("+");
   var base = Math.round(TC[0] / 60);
   TC = base + "'+" + TC[1] + '"';
@@ -2481,17 +2496,21 @@ function fixOrder()
       tiePoints = tiePoints + engine.WinAsBlack/(100 * 100 * 100);
       tiePoints = tiePoints + engine.Neustadtl/(100 * 100 * 1000);
       tiePoints = tiePoints + engine.Rating/(100 * 100 * 1000 * 1000);
-      plog ("tiePoints is :" + tiePoints, 0);
-      arr[count] = engine.Score + tiePoints/10;
+      tiePoints = tiePoints + count/(100 * 100 * 1000 * 1000 * 1000);
+      plog ("tiePoints is :" + tiePoints + ", count is :" + count + " , name is :" + key, 1);
+      arr[count] = parseInt(engine.Score) + tiePoints/10;
       count = count + 1;
    });
 
    var sorted = arr.slice().sort(function(b,a){return a-b})
    var ranks = arr.slice().map(function(v){ return sorted.indexOf(v)+1 });
    count = 0;
+   plog ("rank kenght us :" + ranks.length, 1);
+   //crosstableData.Order = ranks;
 
    _.each(crosstableData.Table, function(engine, key) {
       engine.Rank = ranks[count];
+      plog ("engine.Rank-1 is :" + ranks[count] + " ,count:" + count, 1);
       count = count + 1;
       crosstableData.Order[engine.Rank-1] = key;
       });
