@@ -381,7 +381,9 @@ watcher.on('change', (path, stats) => {
       if (inprogress == 0)
       {
          inprogress = 1;
-         exec("perl " + singlePerl + ' ' + tag + ' ' + json + tag, function(err, stdout, stderr) {
+         var perlrun = "perl " + singlePerl + " --ful TCEC_Season_14_full.pgn --tag " + tag + ' --loc ' + json + tag;
+         console.log ("Need to run :" + perlrun);
+         exec(perlrun, function(err, stdout, stderr) {
             console.log ("Doing it:" + stdout + stderr);
             setTimeout(function() {
                io.emit('refreshsched', {'count': 1});
