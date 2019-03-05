@@ -189,6 +189,7 @@ var gameJson = archroot + 'gamelist.json';
 var singlePerl = archroot + 'single.pl';
 var tag = null;
 var pgnFile = null;
+var fullzip = 0;
 
 function checkLatestArchive()
 {
@@ -203,6 +204,7 @@ function checkLatestArchive()
 
    tag = retPgn.abb;
    pgnFile = pgnDir + retPgn.pgnfile;
+   fullzip = retPgn.download;
 
    return (pgnFile);
 }
@@ -381,7 +383,7 @@ watcher.on('change', (path, stats) => {
       if (inprogress == 0)
       {
          inprogress = 1;
-         var perlrun = "perl " + singlePerl + " --ful TCEC_Season_14_full.pgn --tag " + tag + ' --loc ' + json + tag;
+         var perlrun = "perl " + singlePerl + " --ful " + fullzip + " --tag " + tag + ' --loc ' + json + tag;
          console.log ("Need to run :" + perlrun);
          exec(perlrun, function(err, stdout, stderr) {
             console.log ("Doing it:" + stdout + stderr);

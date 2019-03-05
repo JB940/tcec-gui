@@ -2293,6 +2293,10 @@ function updateResData(engineName)
 {
    _.each(crosstableData.Table, function (value, key)
    {
+      if (value.OrigStrikes == undefined || value.OrigStrikes == 'undefined')
+      {
+         value.OrigStrikes = value.Strikes;
+      }
       if (key == engineName)
       {
          value.Strikes = parseInt(value.Strikes) + 1;
@@ -2497,8 +2501,8 @@ function fixOrder()
       tiePoints = tiePoints + engine.Neustadtl/(100 * 100 * 1000);
       tiePoints = tiePoints + engine.Rating/(100 * 100 * 1000 * 1000);
       tiePoints = tiePoints + count/(100 * 100 * 1000 * 1000 * 1000);
-      plog ("tiePoints is :" + tiePoints + ", count is :" + count + " , name is :" + key, 1);
-      arr[count] = parseInt(engine.Score) + tiePoints/10;
+      arr[count] = parseFloat(engine.Score).toFixed(1) + tiePoints/10;
+      plog ("tiePoints is :" + tiePoints + ", count is :" + arr[count] + " , name is :" + key + ", score:" + engine.Score, 0);
       count = count + 1;
    });
 
@@ -2506,11 +2510,12 @@ function fixOrder()
    var ranks = arr.slice().map(function(v){ return sorted.indexOf(v)+1 });
    count = 0;
    plog ("rank kenght us :" + ranks.length, 1);
+   plog ("Ranks is :" + ranks, 0);
    //crosstableData.Order = ranks;
 
    _.each(crosstableData.Table, function(engine, key) {
       engine.Rank = ranks[count];
-      plog ("engine.Rank-1 is :" + ranks[count] + " ,count:" + count, 1);
+      plog ("engine.Rank-1 is :" + ranks[count] + " ,count:" + count, 0);
       count = count + 1;
       crosstableData.Order[engine.Rank-1] = key;
       });
@@ -2604,7 +2609,7 @@ async function updateCrosstableData(data)
          points: getEngRes.Score,
          wins: wins,
          loss: loss,
-         crashes: getEngRes.LossAsStrike,
+         crashes: engineDetails.OrigStrikes,
          sb: parseFloat(engineDetails.Neustadtl).toFixed(2),
          elo: engineDetails.Rating,
          elo_diff: elo + ' [' + eloDiff + ']'
