@@ -3946,35 +3946,45 @@ function setLastMoveTime(data)
    plog ("Setting last move time:" + data, 0);
 }
 
-function checkTwitch(checkbox)
-{
-   if (checkbox.checked)
-   {
-      $('iframe#twitchvid').hide();
-      localStorage.setItem('tcec-twitch-video', 1);
-   }
-   else
-   {
-      $('iframe#twitchvid').attr('src', twitchSRCIframe);
-      $('iframe#twitchvid').show();
-      localStorage.setItem('tcec-twitch-video', 0);
-   }
+
+let twitchPlayer;
+
+function loadTwitchPlayer() {
+   
 }
 
-function setTwitch()
-{
-   var getVideoCheck = localStorage.getItem('tcec-twitch-video');        
-   if (getVideoCheck == undefined || getVideoCheck == 0)
-   {
-      $('iframe#twitchvid').attr('src', twitchSRCIframe);
-      $('iframe#twitchvid').show();
-      $('#twitchcheck').prop('checked', false);
+function checkTwitch(checkbox) {
+   if (twitchPlayer === null || twitchPlayer === undefined) {
+	   loadTwitchPlayer();
    }
-   else
-   {
-      $('iframe#twitchvid').hide();
+   if (checkbox.checked) {
+      localStorage.setItem('tcec-twitch-video', 1);
+   } else {
+      localStorage.setItem('tcec-twitch-video', 0);
+   }
+   setTwitch();
+}
+
+
+			$('iframe#twitchvid').attr('src', twitchSRCIframe);
+                id="twitchvid"
+                height="400"
+                width="340"
+                frameborder="0"
+                scrolling="no"
+                allowfullscreen="true"
+                autoplay="true"
+                muted="true"
+				
+function setTwitch() {
+   let getVideoCheck = localStorage.getItem('tcec-twitch-video');      
+   let 
+   if (getVideoCheck == undefined || getVideoCheck == 0) {
+      $('#twitchcheck').prop('checked', false);
+   } else {
       $('#twitchcheck').prop('checked', true);
    }
+   
 }
 
 function showEvalCont()
