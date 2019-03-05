@@ -2501,7 +2501,7 @@ function fixOrder()
       tiePoints = tiePoints + engine.Neustadtl/(100 * 100 * 1000);
       tiePoints = tiePoints + engine.Rating/(100 * 100 * 1000 * 1000);
       tiePoints = tiePoints + count/(100 * 100 * 1000 * 1000 * 1000);
-      arr[count] = parseFloat(engine.Score).toFixed(1) + tiePoints/10;
+      arr[count] = parseFloat(parseFloat(engine.Score).toFixed(1) + parseFloat(tiePoints/10).toFixed(1)).toFixed(1);
       plog ("tiePoints is :" + tiePoints + ", count is :" + arr[count] + " , name is :" + key + ", score:" + engine.Score, 0);
       count = count + 1;
    });
