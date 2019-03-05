@@ -3951,35 +3951,56 @@ function setLastMoveTime(data)
    plog ("Setting last move time:" + data, 0);
 }
 
-function checkTwitch(checkbox)
-{
-   if (checkbox.checked)
-   {
-      $('iframe#twitchvid').hide();
+let twitchDiv = $("#twitchvid");
+let twitchPlayer;
+
+function checkTwitch(checkbox) {
+   if (checkbox.checked) {
       localStorage.setItem('tcec-twitch-video', 1);
-   }
-   else
-   {
-      $('iframe#twitchvid').attr('src', twitchSRCIframe);
-      $('iframe#twitchvid').show();
+   } else {
       localStorage.setItem('tcec-twitch-video', 0);
    }
+   playTwitchPlayer(!checkbox.checked);
 }
 
-function setTwitch()
-{
-   var getVideoCheck = localStorage.getItem('tcec-twitch-video');        
-   if (getVideoCheck == undefined || getVideoCheck == 0)
-   {
-      $('iframe#twitchvid').attr('src', twitchSRCIframe);
-      $('iframe#twitchvid').show();
-      $('#twitchcheck').prop('checked', false);
-   }
-   else
-   {
-      $('iframe#twitchvid').hide();
-      $('#twitchcheck').prop('checked', true);
-   }
+				
+function setTwitch() {   
+   let getVideoCheck = localStorage.getItem('tcec-twitch-video');
+
+   let doPlay = getVideoCheck == undefined || getVideoCheck == 0;
+   $('#twitchcheck').prop('checked', !doPlay);
+   
+   let options = {
+     width: 340,
+     height: 400,
+     channel: twitchAccount,
+   };
+  
+   twitchPlayer = new Twitch.Player("twitchvid", options);
+   twitchPlayer.setVolume(0.0);
+   twitchPlayer.setMuted(true);
+   twitchPlayer.addEventListener(Twitch.Player.READY, function() {
+      setTimeout(function() { playTwitchPlayer(doPlay); },2000);
+   });
+   
+   twitchPlayer.addEventListener(Twitch.Player.PLAYING, function() {
+      let quality;
+      while (quality == null || quality.length === 0) {
+         quality = twitchPlayer.getQualities();
+      }
+      let worstQuality = quality[quality.length-1].name;
+      twitchPlayer.setQuality(worstQuality);
+   });
+}
+
+function playTwitchPlayer(doPlay) {
+  if (doPlay) {
+     twitchPlayer.play();
+     twitchDiv.show();
+  } else {
+     twitchPlayer.pause();
+	 twitchDiv.hide();
+  }
 }
 
 function showEvalCont()
