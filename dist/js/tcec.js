@@ -834,7 +834,11 @@ function copyFen()
 function getShortEngineName(engine)
 {
    var name = engine;
-   if (engine.indexOf(' ') > 0)
+   if (engine.match(/Baron/))
+   {
+      return 'Baron';
+   }
+   else if (engine.indexOf(' ') > 0)
    {
       name = engine.substring(0, engine.indexOf(' '));
    }
@@ -2501,7 +2505,7 @@ function fixOrder()
       tiePoints = tiePoints + engine.Neustadtl/(100 * 100 * 1000);
       tiePoints = tiePoints + engine.Rating/(100 * 100 * 1000 * 1000);
       tiePoints = tiePoints + count/(100 * 100 * 1000 * 1000 * 1000);
-      arr[count] = parseFloat(parseFloat(engine.Score).toFixed(1) + parseFloat(tiePoints/10).toFixed(1)).toFixed(1);
+      arr[count] = parseFloat(parseFloat(engine.Score) + parseFloat(tiePoints/10));
       plog ("tiePoints is :" + tiePoints + ", count is :" + arr[count] + " , name is :" + key + ", score:" + engine.Score, 0);
       count = count + 1;
    });
