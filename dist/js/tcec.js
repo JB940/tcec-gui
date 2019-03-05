@@ -3966,8 +3966,12 @@ function checkTwitch(checkbox) {
 				
 function setTwitch() {   
    let getVideoCheck = localStorage.getItem('tcec-twitch-video');
-   let disabled = getVideoCheck == undefined || getVideoCheck == 0;
-   $('#twitchcheck').prop('checked', disabled);
+   
+   plog (getVideoCheck,0);
+
+   let doPlay = getVideoCheck == undefined || getVideoCheck == 0;
+   plog(doPlay,0);
+   $('#twitchcheck').prop('checked', !doPlay);
    
    let options = {
      width: 340,
@@ -3979,7 +3983,7 @@ function setTwitch() {
    twitchPlayer.setVolume(0.0);
    twitchPlayer.setMuted(true);
    twitchPlayer.addEventListener(Twitch.Player.READY, function() {
-      setTimeout(function() { playTwitchPlayer(!disabled); },2000);
+      setTimeout(function() { playTwitchPlayer(doPlay); },2000);
    });
    
    twitchPlayer.addEventListener(Twitch.Player.PLAYING, function() {
