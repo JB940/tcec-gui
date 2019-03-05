@@ -3966,11 +3966,8 @@ function checkTwitch(checkbox) {
 				
 function setTwitch() {   
    let getVideoCheck = localStorage.getItem('tcec-twitch-video');
-   
-   plog (getVideoCheck,0);
 
    let doPlay = getVideoCheck == undefined || getVideoCheck == 0;
-   plog(doPlay,0);
    $('#twitchcheck').prop('checked', !doPlay);
    
    let options = {
@@ -3991,7 +3988,6 @@ function setTwitch() {
       while (quality == null || quality.length === 0) {
          quality = twitchPlayer.getQualities();
       }
-      plog(quality,0);
       let worstQuality = quality[quality.length-1].name;
       twitchPlayer.setQuality(worstQuality);
    });
