@@ -1195,16 +1195,7 @@
 
       <div class="row">
           <div class="col-md-12 text-center d-none d-sm-block">
-            <iframe
-                id="twitchvid"
-                height="400"
-                width="340"
-                frameborder="0"
-                scrolling="no"
-                allowfullscreen="true"
-                autoplay="true"
-                muted="true">
-            </iframe>
+            <div id="twitchvid"></div>
           </div>
           <div class="col-md-12 text-center">
             <div>
@@ -1469,6 +1460,7 @@ To play the games a special version of cutechess-cli is used. This is a command 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.12.1/bootstrap-table.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.js"></script>
+	<script src= "https://player.twitch.tv/js/embed/v1.js"></script>
     <script src="dist/js/graphs.js?v=10000000000000000000042"></script>
     <script src="dist/js/chessboard.js?v=10000000000000000000042"></script>
     <script src="dist/js/tcec.js?v=10000000000000000000042"></script>
@@ -1538,7 +1530,7 @@ To play the games a special version of cutechess-cli is used. This is a command 
           window.setTimeout(function() 
           { 
              setTwitch();
-          }, 10000);
+          }, 4000);
           window.setTimeout(function() 
           { 
              getUserS();
