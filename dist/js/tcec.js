@@ -3951,45 +3951,56 @@ function setLastMoveTime(data)
    plog ("Setting last move time:" + data, 0);
 }
 
-
+let twitchDiv = $("#twitchvid");
 let twitchPlayer;
 
-function loadTwitchPlayer() {
-   
-}
-
 function checkTwitch(checkbox) {
-   if (twitchPlayer === null || twitchPlayer === undefined) {
-	   loadTwitchPlayer();
-   }
    if (checkbox.checked) {
       localStorage.setItem('tcec-twitch-video', 1);
    } else {
       localStorage.setItem('tcec-twitch-video', 0);
    }
-   setTwitch();
+   playTwitchPlayer(!checkbox.checked);
 }
 
-
-			$('iframe#twitchvid').attr('src', twitchSRCIframe);
-                id="twitchvid"
-                height="400"
-                width="340"
-                frameborder="0"
-                scrolling="no"
-                allowfullscreen="true"
-                autoplay="true"
-                muted="true"
 				
-function setTwitch() {
-   let getVideoCheck = localStorage.getItem('tcec-twitch-video');      
-   let 
-   if (getVideoCheck == undefined || getVideoCheck == 0) {
-      $('#twitchcheck').prop('checked', false);
-   } else {
-      $('#twitchcheck').prop('checked', true);
-   }
+function setTwitch() {   
+   let getVideoCheck = localStorage.getItem('tcec-twitch-video');
+   let disabled = getVideoCheck == undefined || getVideoCheck == 0;
+   $('#twitchcheck').prop('checked', disabled);
    
+   let options = {
+     width: 340,
+     height: 400,
+     channel: twitchAccount,
+   };
+  
+   twitchPlayer = new Twitch.Player("twitchvid", options);
+   twitchPlayer.setVolume(0.0);
+   twitchPlayer.setMuted(true);
+   twitchPlayer.addEventListener(Twitch.Player.READY, function() {
+      setTimeout(function() { playTwitchPlayer(!disabled); },2000);
+   });
+   
+   twitchPlayer.addEventListener(Twitch.Player.PLAYING, function() {
+      let quality;
+      while (quality == null || quality.length === 0) {
+         quality = twitchPlayer.getQualities();
+      }
+      plog(quality,0);
+      let worstQuality = quality[quality.length-1].name;
+      twitchPlayer.setQuality(worstQuality);
+   });
+}
+
+function playTwitchPlayer(doPlay) {
+  if (doPlay) {
+     twitchPlayer.play();
+     twitchDiv.show();
+  } else {
+     twitchPlayer.pause();
+	 twitchDiv.hide();
+  }
 }
 
 function showEvalCont()
