@@ -1,39 +1,168 @@
 {
-   "ratings" : [
-         {"name":"Stockfish", "elo": 3437},
-         {"name":"Komodo", "elo": 3399},
-         {"name":"Houdini", "elo": 3413},
-         {"name":"Fire", "elo": 3452},
-         {"name":"Ethereal", "elo": 3373},
-         {"name":"Andscacs", "elo": 3391},
-         {"name":"Ginkgo", "elo": 3365},
-         {"name":"LCZero", "elo": 3418},
-         {"name":"KomodoMCTS", "elo": 3200},
-         {"name":"Chiron", "elo": 3379},
-         {"name":"Hannibal", "elo": 3033},
-         {"name":"Nemorino", "elo": 2986},
-         {"name":"rofChade", "elo": 3020},
-         {"name":"Arasan", "elo": 3061},
-         {"name":"Vajolet2", "elo": 3011},
-         {"name":"Pedone", "elo": 3072},
-         {"name":"Fizbo", "elo": 3286},
-         {"name":"Jonny", "elo": 3256},
-         {"name":"Booot", "elo": 3235},
-         {"name":"Laser", "elo": 3216},
-         {"name":"Fritz", "elo": 3200},
-         {"name":"Xiphos", "elo": 3181},
-         {"name":"ChessBrainVB", "elo": 3148},
-         {"name":"Gull", "elo": 3138},
-         {"name":"Texel", "elo": 3098},
-         {"name":"Nirvana", "elo": 3093},
-         {"name":"Schooner", "elo": 2921},
-         {"name":"Wasp", "elo": 2884},
-         {"name":"pirarucu", "elo": 2844},
-         {"name":"Demolito", "elo": 2827},
-         {"name":"Rodent", "elo": 2713},
-         {"name":"chess22k", "elo": 2701},
-         {"name":"Tucano", "elo": 2685},
-         {"name":"Winter", "elo": 2584},
-         {"name":"ScorpioNN", "elo": 2153}
-      ]
+    "ratings": [
+        {
+            "elo": 3577,
+            "name": "LCZero v20.2-32930"
+        },
+        {
+            "elo": 3577,
+            "name": "Stockfish 190203"
+        },
+        {
+            "elo": 3544,
+            "name": "Houdini 6.03"
+        },
+        {
+            "elo": 3535,
+            "name": "Komodo 2227.00"
+        },
+        {
+            "elo": 3460,
+            "name": "Fire 011819"
+        },
+        {
+            "elo": 3454,
+            "name": "Ethereal 11.24"
+        },
+        {
+            "elo": 3452,
+            "name": "KomodoMCTS 2246.00"
+        },
+        {
+            "elo": 3436,
+            "name": "Andscacs 095045"
+        },
+        {
+            "elo": 3417,
+            "name": "Xiphos 0.4.19"
+        },
+        {
+            "elo": 3412,
+            "name": "Laser 160119"
+        },
+        {
+            "elo": 3411,
+            "name": "Ginkgo 2.18"
+        },
+        {
+            "elo": 3385,
+            "name": "Chiron S14"
+        },
+        {
+            "elo": 3383,
+            "name": "Fizbo 2"
+        },
+        {
+            "elo": 3376,
+            "name": "Booot 6.3.1"
+        },
+        {
+            "elo": 3368,
+            "name": "Jonny 8.1"
+        },
+        {
+            "elo": 3312,
+            "name": "Nirvana 2.4"
+        },
+        {
+            "elo": 3311,
+            "name": "ChessBrainVB 3.72"
+        },
+        {
+            "elo": 3305,
+            "name": "Arasan CCC3"
+        },
+        {
+            "elo": 3300,
+            "name": "Gull 190117"
+        },
+        {
+            "elo": 3298,
+            "name": "RubiChess 1.3.1"
+        },
+        {
+            "elo": 3288,
+            "name": "Pedone 191118"
+        },
+        {
+            "elo": 3288,
+            "name": "rofChade 2.005T"
+        },
+        {
+            "elo": 3281,
+            "name": "Fritz 16.10"
+        },
+        {
+            "elo": 3250,
+            "name": "Nemorino 5.08"
+        },
+        {
+            "elo": 3243,
+            "name": "Vajolet2 2.6.1"
+        },
+        {
+            "elo": 3211,
+            "name": "Texel 1.08a13"
+        },
+        {
+            "elo": 3162,
+            "name": "Schooner 2.0.33"
+        },
+        {
+            "elo": 3123,
+            "name": "Hannibal 20181202"
+        },
+        {
+            "elo": 3117,
+            "name": "Wasp 3.54"
+        },
+        {
+            "elo": 3111,
+            "name": "pirarucu 2.7.4"
+        },
+        {
+            "elo": 3090,
+            "name": "Demolito 20181029"
+        },
+        {
+            "elo": 3048,
+            "name": "The Baron 3.44.1"
+        },
+        {
+            "elo": 2997,
+            "name": "Tucano 7.07"
+        },
+        {
+            "elo": 2974,
+            "name": "chess22k 1.11"
+        },
+        {
+            "elo": 2957,
+            "name": "Rodent III 0.276"
+        },
+        {
+            "elo": 2854,
+            "name": "Winter 0.5"
+        },
+        {
+            "elo": 2819,
+            "name": "Cheese 2.0"
+        },
+        {
+            "elo": 2783,
+            "name": "Minic 0.42"
+        },
+        {
+            "elo": 2495,
+            "name": "Topple 0.4.0"
+        },
+        {
+            "elo": 2420,
+            "name": "Igel 1.2"
+        },
+        {
+            "elo": 2261,
+            "name": "ScorpioNN 2.8.9"
+        }
+    ]
 }

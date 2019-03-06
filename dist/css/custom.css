@@ -96,6 +96,11 @@ body {
 	max-width: 80px;
 }
 
+#log-wrapper {
+	max-height: 800px;
+   overflow-y: scroll;
+}
+
 .engine-material {
 	height: 28px;
 	width: 28px;
@@ -431,7 +436,7 @@ canvas {
 
 .fmedium
 {
-   font-size:16px;
+   font-size:14px;
    font-weight: bolder;
 }
 

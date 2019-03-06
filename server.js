@@ -10,6 +10,7 @@ const axios = require('axios');
 var chokidar = require('chokidar');
 var _ = require('lodash');
 var lastPgnTime = Date.now();
+const readLastLines = require('read-last-lines');
 
 const pid = process.pid;
 const exec = require('child_process').exec;
@@ -233,6 +234,14 @@ io.sockets.on ('connection', function(socket){
       }
    }
 
+   socket.on('room', function(room) {
+      socket.join(room);
+   });
+
+   socket.on('noroom', function(room) {
+      socket.leave(room);
+   });
+
    socket.on('disconnect', function()
    {
        socketArray = arrayRemove(socketArray, clientIp);
@@ -369,6 +378,40 @@ var prevCrossData = 0;
 var prevSchedData = 0;
 var delta = {};
 var inprogress = 0;
+
+var watcher1 = chokidar.watch('/var/www/json/main/live.log', {
+      persistent: true,
+      ignoreInitial: false,
+      followSymlinks: true,
+      disableGlobbing: false,
+      usePolling: true,
+      interval: 5000,
+      binaryInterval: 5000,
+      alwaysStat: false,
+      depth: 3
+      //atomic: true // or a custom 'atomicity delay', in milliseconds (default 100)
+});
+
+function sendlines(data)
+{
+   data = data.replace(/>/g, '');
+   data = data.replace(/</g, '');
+   data = data.replace(/'\n'/, '<br>');
+   io.sockets.in(room).emit('htmlread', data);
+}
+
+room = "livelog";
+
+watcher1.on('change', (path, stats) => {
+   readLastLines.read('/var/www/json/main/live.log', 20)
+    .then((lines) => sendlines(lines));
+});
+
+exec('./makelnk.sh ' + tag, function callback(error, stdout, stderr){
+   console.log ("Error is :" + stderr);
+   console.log ("Output is :" + stdout);
+    // result
+});
 
 watcher.on('change', (path, stats) => {
    if (0)

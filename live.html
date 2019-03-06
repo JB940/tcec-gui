@@ -1111,7 +1111,10 @@
                <a class="nav-link active" id="pills-chat-tab" data-toggle="pill" href="#pills-chat" role="tab" aria-controls="pills-chat" aria-selected="true">Chat</a>
             </li>
             <li class="nav-item">
-               <a class="nav-link fa fa-trophy" id="pills-win-tab" data-toggle="pill" href="#pills-win" role="tab" aria-controls="pills-win" aria-selected="true"> Winners</a>
+               <a class="nav-link" id="pills-win-tab" data-toggle="pill" href="#pills-win" role="tab" aria-controls="pills-win" aria-selected="true">
+               <div class="d-none d-sm-block d-md-block">&ensp; Winners</div>
+               <div class="fa fa-trophy d-block d-sm-none d-md-none"></div>
+               </a>
             </li>
             <li class="nav-item">
                <a class="nav-link" id="pills-info-tab" data-toggle="pill" href="#pills-info" role="tab" aria-controls="pills-info" aria-selected="true">Information</a>
@@ -1134,7 +1137,23 @@
               </div>
             </div>
             <div class="tab-pane show fade smallfont" id="pills-info" role="tabpanel" aria-labelledby="pills-info-tab">
-                <iframe src="#" id="info-frame" height="800" width="100%" frameborder="0"></iframe> 
+               <center>
+               <br>
+               <br>
+               <br>
+               <br>
+               <br>
+               <h5>Overview of TCEC related websites at
+               <br>
+               <br>
+               <br>
+               <a href="https://chessdom.org/" target="_blank">https://chessdom.org
+               <br>
+               <br>
+
+               <img src="img/TCEC-logo.png" class="banner-image" alt="TCEC" /></a>
+               </h5>
+               <center>
             </div>
       </div>
    </div>
@@ -1144,27 +1163,33 @@
 
       <ul class="nav nav-pills mb-3 nav-justified" id="pills-tab" role="tablist">
         <li class="nav-item">
-          <a class="nav-link active" id="pills-stand-tab" data-toggle="pill" href="#pills-stand" role="tab" aria-controls="pills-stand" aria-selected="true">
+          <a class="nav-link active" id="pills-stand-tab" data-toggle="pill" href="#pills-stand" role="tab" aria-controls="pills-stand" onclick="unlistenLog()" aria-selected="true">
              <div class="fmedium fa fa-medal d-none d-sm-block d-md-block">&ensp; Standings</div>
              <div class="fmedium fa fa-medal d-block d-sm-none d-md-none"></div>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" id="pills-cross-tab" data-toggle="pill" href="#pills-cross" role="tab" aria-controls="pills-cross" aria-selected="true">
+          <a class="nav-link" id="pills-cross-tab" data-toggle="pill" href="#pills-cross" role="tab" aria-controls="pills-cross" onclick="unlistenLog()" aria-selected="true">
              <div class="fmedium fa fa-times d-none d-sm-block d-md-block">&ensp; Crosstable</div>
              <div class="fmedium fa fa-times d-block d-sm-none d-md-none"></div>
           </a>
         </li>
         <li>
-          <a class="nav-link" id="pills-h2h-tab" data-toggle="pill" href="#pills-h2h" role="tab" aria-controls="pills-h2h" aria-selected="true">
+          <a class="nav-link" id="pills-h2h-tab" data-toggle="pill" href="#pills-h2h" role="tab" aria-controls="pills-h2h" onclick="unlistenLog()" aria-selected="true">
              <div class="fmedium fa fa-khanda d-none d-sm-block d-md-block">&ensp; Head2Head</div>
              <div class="fmedium fa fa-khanda d-block d-sm-none d-md-none"></div>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" id="pills-sched-tab" data-toggle="pill" href="#pills-sched" role="tab" aria-controls="pills-sched" aria-selected="false">
+          <a class="nav-link" id="pills-sched-tab" data-toggle="pill" href="#pills-sched" role="tab" aria-controls="pills-sched" onclick="unlistenLog()" aria-selected="false">
              <div class="fmedium fa fa-calendar-alt d-none d-sm-block d-md-block">&ensp; Schedule</div>
              <div class="fmedium fa fa-calendar-alt d-block d-sm-none d-md-none"></div>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" id="pills-log-tab" data-toggle="pill" href="#pills-log" role="tab" aria-controls="pills-sched" onclick="listenLog()" aria-selected="false">
+             <div class="fmedium fa fa-book d-none d-sm-block d-md-block">&ensp; Livelog</div>
+             <div class="fmedium fa fa-book d-block d-sm-none d-md-none"></div>
           </a>
         </li>
       </ul>
@@ -1189,6 +1214,10 @@
             </table>
           </div>
         </div>
+        <div class="tab-pane fade smallfont logclass" id="pills-log" role="tabpanel" aria-labelledby="pills-log-tab">
+          <div id="log-wrapper">
+          </div>
+        </div>
       </div>
 
       <br>
@@ -1201,10 +1230,10 @@
             <div>
                 &copy;<a href="https://tcec.chessdom.com/">TCEC</a>
                 <a target="_blank" href="http://www.chessdom.com">Chessdom</a>
-                &copy;<a target="_blank" href="https://arena.chessdom.com/">Chess Arena</a> 2010-2018
+                &copy;<a target="_blank" href="https://arena.chessdom.com/">Chess Arena</a> 2010-2019
             </div>
             <div>
-                TCEC is powered by ... <a target="_blank" href="http://chessboardjs.com">chessboard.js</a> and <a target="_blank" href="https://github.com/coolchess123/cutechess">cutechess-cli</a>
+                TCEC is powered by ... <a target="_blank" href="http://chessboardjs.com">chessboard.js</a> and <a target="_blank" href="https://github.com/coolchess123/tceccutechess">cutechess-cli</a>
             </div>
           </div>
         </div>
@@ -1275,18 +1304,21 @@
                 TCEC runs 24/7 until all games have been played. One game is played at a time - the next one starts automatically.<br><br>
 
                 <b>Time control</b><br>
-                Classical time control will be used through the season and it is increased as the season progresses. For Division 2, 3 and 4, the time control is 30 minutes + 10 seconds added per move for the whole game. For Division 1, the time control is 60 minutes + 10 seconds added per move for the whole game. For Division Premier, the time control is 90 minutes + 10 seconds added per move for the whole game. For the Superfinal, the time control is 120 minutes + 15 seconds added per move for the whole game. If an engine loses on time, the result will not be changed or the game replayed. If the TCEC game server locks up at any time during a game (BSOD, freeze etc), that game will be restarted unless the last position was a 6-man or less tablebase position, then it will be manually adjudicated. If a remote GPU machine disconnects, the decision whether to replay the game or adjudicate will be by the Season administrator. Prior to Season 9, different time controls have been used. Check the individual games in the "Archive page" for info.<br><br>
+                Classical time control will be used through the season and it is increased as the season progresses. For Division 2, 3 and 4, the time control is 30 minutes + 5 seconds added per move for the whole game. For Division 1, the time control is 60 minutes + 5 seconds added per move for the whole game. For Division Premier, the time control is 90 minutes + 10 seconds added per move for the whole game. For the Superfinal, the time control is 120 minutes + 10 seconds added per move for the whole game. <br>
+
+
+                <b>Crashes</b><br>
+                If an engine loses on time, the result will not be changed or the game replayed. In case of a server disconnect or other interruption not caused by the engines: If the web server crashes, the game continues unaffected, and broadcasting will be resumed as soon as possible; If the evaluation of both engines is more than ABS(10) at the moment of game server interruption, the game is scored as a win ; If the evaluation of both engines is less than ABS(0.10) at the moment of game server interruption, and both engines have completed 35 moves, the game is scored as a draw; If a game interrupts with 7 pieces on the board, position on the board at the instant of game server interruption will be adjudicated according to 7-man EGTB. ** In all other cases the game is replayed. <br>
 
                 <b>Game adjudication</b><br>
                 A game can be drawn by the normal 3-fold repetition rule or the 50-move rule. However, a game can also be drawn at move 35 or later if the eval from both playing engines are within +0.08 to -0.08 pawns for the last 5 moves, or 10 plies. If there is a pawn advance, or a capture of any kind, this special draw rule will reset and start over. On the GUI interface, this rule is shown as "TCEC draw rule" with a number indicating how many plies there are left until it becomes official. It will adjudicate as won for one side if both playing engines have an eval of at least 10.00 pawns (or -10.00 in case of a black win) for 5 consecutive moves, or 10 plies - this rule is in effect as soon as the game starts. On the GUI interface, this rule is shown as "TCEC win rule" with a number indicating how many plies there are left until it becomes official. Cutechess will also adjudicate 6-men or less endgame positions automatically with Syzygy tablebases.<br><br>
-
                 
 
                 <b>Critical Engine Bugs</b><br>
                 In the case of a serious, play-limiting bug (like crashing or interface communication problems, not including losses on time) not discovered during the pre-Season testing, the engine can be updated once per Division to fix this/these bug/bugs only at the cost of one strike. If this update still doesn't fix the problem(s) or if there is no update available, the engine might have the number of cores reduced, have the hash size reduced or have the tablebase access disabled - these changes will remain for the rest of the Division.<br><br>
 
                 <b>Tiebreaks</b><br>
-                If necessary, tiebreaks can be used to determine advancement. For all Divisions (not the Superfinal), the first tiebreak criteria is the "crash" tiebreak, meaning that if an engine has crashed once or more during the Division, it will fail qualification versus another engine that has not crashed if both of them has the same amount of points. In case of still being tied, then the direct encounter between the tied engines decides. The next criterion is the greatest number of wins, then the greatest number of wins with black. The Sonneborn-Berger is the next criteria. If they are still tied, then the tournament organizers will decide which engine gets the promotion.<br><br>
+                If necessary, tiebreaks can be used to determine advancement. For all Divisions (not the Superfinal), the first tiebreak criteria is the "crash" tiebreak, meaning that if an engine has crashed once or more during the Division, it will fail qualification versus another engine that has not crashed if both of them has the same amount of points. In case of still being tied, then the direct encounter between the tied engines decides. The next criterion is the greatest number of wins. The Sonneborn-Berger is the next criteria. If they are still tied, then the tournament organizers will decide which engine gets the promotion.<br><br>
 
                 <b>Engine Updates</b><br>
                 Engines that promote to a new Division are allowed to update before the Division submission deadline without penalty, no matter if it is to fix bugs uncovered during the previous Division or to submit a better version. Promoting engines may update UCI/xboard settings. The deadline for engine submission is the last game of the current Division unless the programmer is given a specific deadline from the Tournament Director - the goal is to be able to start the next Division as soon as possible without any significant delay. Note that no testing between divisions will be provided and engine authors update at their own risk. <br><br>
@@ -1575,6 +1607,13 @@ To play the games a special version of cutechess-cli is used. This is a command 
       //var socket = io.connect('https://tcecbonus.club:8010');
       var socket = io.connect('https://tcec.chessdom.com:8000');
      
+      socket.on('htmlread', function(data){
+         var div = document.getElementById('log-wrapper');
+         div.innerHTML += '<p>' + data + '</p>';
+         div.scrollTop = div.scrollHeight;      
+         console.log ("XXX: recieving data from log");
+         });
+
       socket.on('crosstable', function(data){
          updateCrosstableData(data);
          updateStandtableData(data);

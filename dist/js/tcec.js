@@ -849,9 +849,7 @@ function setInfoFromCurrentHeaders()
 {
   var header = loadedPgn.Headers.White;
   var name = header;
-  if (header.indexOf(' ') > 0) {
-    name = header.substring(0, header.indexOf(' '))
-  }
+  name = getShortEngineName(header);
   $('.white-engine-name').html(name);
   $('.white-engine-name-full').html(header);
   whiteEngineFull = header;
@@ -860,11 +858,8 @@ function setInfoFromCurrentHeaders()
   $('#white-engine').attr('alt', header);
   $('#white-engine-chessprogramming').attr('href', 'https://www.chessprogramming.org/' + name);
   header = loadedPgn.Headers.Black;
-  name = header;
   blackEngineFull = header;
-  if (header.indexOf(' ') > 0) {
-    name = header.substring(0, header.indexOf(' '))
-  }
+  name = getShortEngineName(header);
   $('.black-engine-name').html(name);
   $('.black-engine-name-full').html(header);
   var imgsrc = 'img/engines/' + name + '.jpg';
@@ -2501,7 +2496,7 @@ function fixOrder()
          }
       });
       tiePoints = tiePoints + engine.Wins/(100 * 100);
-      tiePoints = tiePoints + engine.WinAsBlack/(100 * 100 * 100);
+      //tiePoints = tiePoints + engine.WinAsBlack/(100 * 100 * 100);
       tiePoints = tiePoints + engine.Neustadtl/(100 * 100 * 1000);
       tiePoints = tiePoints + engine.Rating/(100 * 100 * 1000 * 1000);
       tiePoints = tiePoints + count/(100 * 100 * 1000 * 1000 * 1000);
@@ -2613,7 +2608,7 @@ async function updateCrosstableData(data)
          points: getEngRes.Score,
          wins: wins,
          loss: loss,
-         crashes: engineDetails.OrigStrikes,
+         crashes: engineDetails.OrigStrikes ? engineDetails.OrigStrikes : engineDetails.Strikes,
          sb: parseFloat(engineDetails.Neustadtl).toFixed(2),
          elo: engineDetails.Rating,
          elo_diff: elo + ' [' + eloDiff + ']'
@@ -5021,5 +5016,21 @@ function loadBoardMiddle()
    else
    {
       setCheckBoardMiddle(1, '#middlecheck');
+   }
+}
+
+function listenLog()
+{
+   if (socket)
+   {
+      socket.emit('room', 'livelog');
+   }
+}
+
+function unlistenLog()
+{
+   if (socket)
+   {
+      socket.emit('noroom', 'livelog');
    }
 }
