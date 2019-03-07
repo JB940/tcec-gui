@@ -97,7 +97,7 @@ body {
 }
 
 #log-wrapper {
-	max-height: 800px;
+	max-height: 400px;
    overflow-y: scroll;
 }
 

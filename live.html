@@ -82,8 +82,8 @@
             <div class="dropdown-menu" aria-labelledby="dd-download">
               <a class="dropdown-item" href="http://legacy-tcec.chessdom.com/archive/crosstable.json" target="_blank">Crosstable</a>
               <a class="dropdown-item" href="http://legacy-tcec.chessdom.com/archive/schedule.json" target="_blank">Schedule</a>
-              <a class="dropdown-item" href="http://tcec.chessdom.com/event.pgn" target="_blank">Event PGN</a>
-              <a class="dropdown-item" href="http://legacy-tcec.chessdom.com/live/live.pgn" target="_blank">Current PGN</a>
+              <a class="dropdown-item" href="https://tcec.chessdom.com/evalbotelo/archive.pgn" target="_blank">Event PGN</a>
+              <a class="dropdown-item" href="https://tcec.chessdom.com/evalbotelo/live.pgn" target="_blank">Current PGN</a>
             </div>
           </li>
           <li class="nav-item dropdown">
@@ -1609,9 +1609,13 @@ To play the games a special version of cutechess-cli is used. This is a command 
      
       socket.on('htmlread', function(data){
          var div = document.getElementById('log-wrapper');
-         div.innerHTML += '<p>' + data + '</p>';
+         var matches = data.split(/\n|\s\n/);
+         data = matches.join("<br>");   
+         var d = new Date();
+         var n = d.toLocaleTimeString();
+         div.innerHTML += "<h5><b><i><u>" + n + "</u></i></b></h5>" + "<p align=left>" + data + "</p>";
          div.scrollTop = div.scrollHeight;      
-         console.log ("XXX: recieving data from log");
+         console.log ("XXX: recieving data from log:" + data);
          });
 
       socket.on('crosstable', function(data){

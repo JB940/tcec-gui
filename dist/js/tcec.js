@@ -174,6 +174,10 @@ function updatePgnDataMain(data)
       {
          updateEngineInfo('#whiteenginetable', '#white-engine-info', data.WhiteEngineOptions);
       }
+      if (data.BlackEngineOptions != prevPgnData.BlackEngineOptions)
+      {
+         updateEngineInfo('#blackenginetable', '#black-engine-info', data.BlackEngineOptions);
+      }
    }
    setPgn(data);
 }
@@ -2934,10 +2938,13 @@ function updateScheduleData(scdatainput)
    });
 
    $('#schedule').bootstrapTable('load', scdata);
-   $("#schedule").on("click-cell.bs.table", function (field, value, row, $el) {                                                                                                                       
-      openCross($el.agame);                                                                                                                                                                     
-   }); 
    scheduleHighlight();
+   $("#schedule").on("click-cell.bs.table", function (field, value, row, $el) {                                                                                                                       
+      if ($el.agame <= gamesDone)
+      {
+         openCross($el.agame);                                                                                                                                                                     
+      }
+   }); 
 }
 
 function scheduleHighlight(noscroll)                                                                                                                                                                  

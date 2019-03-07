@@ -10,76 +10,57 @@ const axios = require('axios');
 var chokidar = require('chokidar');
 var _ = require('lodash');
 var lastPgnTime = Date.now();
-const readLastLines = require('read-last-lines');
-
+const Tail = require('nodejs-tail');
 const pid = process.pid;
 const exec = require('child_process').exec;
+const argv = require('yargs').argv;
 
-if (typeof process.argv[2] == 'undefined')
+if (argv.port == undefined)
 {
    portnum = 8080;
 }
 else
 {
-   portnum = process.argv[2];
+   portnum = argv.port;
 }
 
 console.log ("Port is " + portnum);
 
-// first parameter is the mount point, second is the location in the file system
 var app = express();
-//app.use(express.static(__dirname));
 
-var options = {
+/* Encryption keys */
+var options = 
+{
    key: fs.readFileSync('/etc/letsencrypt/live/tcecbonus.club/privkey.pem'),
-   cert: fs.readFileSync('/etc/letsencrypt/live/tcecbonus.club/fullchain.pem')   
+   cert: fs.readFileSync('/etc/letsencrypt/live/tcecbonus.club/fullchain.pem')
 };
 
-var server = https.createServer(options, app).listen(parseInt(portnum), function() {
+var server = https.createServer(options, app).listen(parseInt(portnum), function() 
+{
    console.log('Express server listening on port ' + portnum);
 });
-var listener = io.listen(server);                                                                                                 
-io.attach(server, {
-  pingInterval: 25000,
-  pingTimeout: 5000
-});
-var watcher = chokidar.watch('crosstable.json', {
-      persistent: true,
-      ignoreInitial: false,
-      followSymlinks: true,
-      disableGlobbing: false,
-      usePolling: true,
-      interval: 50,
-      binaryInterval: 100,
-      alwaysStat: false,
-      depth: 3,
-      //awaitWriteFinish: {
-        //stabilityThreshold: 2000,
-        //pollInterval: 100
-      //}
-      //atomic: true // or a custom 'atomicity delay', in milliseconds (default 100)
-});
-var liveeval = 'data.json';
-var ctable = 'crosstable.json';
-watcher.add('data1.json');
-watcher.add('liveeval1.json');
-watcher.add(liveeval);
-watcher.add('live.json');
-watcher.add('schedule.json');
-watcher.add('liveeval.json');
-watcher.add('banner.txt');
 
-app.get('/api/gameState', function (req, res) {
+var listener = io.listen(server);
+
+io.attach(server, {
+   pingInterval: 25000,
+   pingTimeout: 5000
+});
+
+app.get('/api/gameState', function (req, res) 
+{
    console.log('api gameState request');
    var currentFen = '';
    var liveData = fs.readFileSync('live.json');
    var liveJsonData = JSON.parse(liveData);
 
-   if (liveJsonData.Moves.length > 0) {
+   if (liveJsonData.Moves.length > 0) 
+   {
       currentFen = liveJsonData.Moves[(liveJsonData.Moves.length - 1)].fen;
    }
 
-   var response = {
+   var response = 
+   {
       'White': liveJsonData.Headers.White,
       'Black': liveJsonData.Headers.Black,
       'CurrentPosition': currentFen,
@@ -90,7 +71,8 @@ app.get('/api/gameState', function (req, res) {
    res.status(200).send(JSON.stringify(response))
 });
 
-app.get('/api/currentPosition', function (req, res) {
+app.get('/api/currentPosition', function (req, res) 
+{
    console.log('api currentPosition request');
    var currentFen = 'No game in progress';
    var liveData = fs.readFileSync('live.json');
@@ -104,33 +86,73 @@ app.get('/api/currentPosition', function (req, res) {
    res.status(200).send(currentFen);
 });
 
+var liveeval = 'data.json';
+
+var watcherFast = chokidar.watch(liveeval, {
+   persistent: true,
+   ignoreInitial: false,
+   followSymlinks: true,
+   disableGlobbing: false,
+   usePolling: true,
+   interval: 50,
+   binaryInterval: 100,
+   alwaysStat: false,
+   depth: 3,
+   });
+
+/* Other chokidar options */
+//awaitWriteFinish: {
+//stabilityThreshold: 2000,
+//pollInterval: 100
+//}
+//atomic: true // or a custom 'atomicity delay', in milliseconds (default 100)
+
+watcherFast.add('data1.json');
+watcherFast.add('liveeval.json');
+watcherFast.add('liveeval1.json');
+watcherFast.add('live.json');
+
+var ctable = 'crosstable.json';
+var watcherSlow = chokidar.watch(ctable, {
+   persistent: true,
+   ignoreInitial: false,
+   followSymlinks: true,
+   disableGlobbing: false,
+   usePolling: true,
+   interval: 2000,
+   binaryInterval: 2000,
+   alwaysStat: false,
+   depth: 3,
+   });
+watcherSlow.add('schedule.json');
+watcherSlow.add('banner.txt');
+
 var count = 0;
 var socket = 0;
 var totalCount = 0;
 var socketArray = [];
 var userCountFactor = 1.0;
 
-function arrayRemove(arr, value) {
-
+function arrayRemove(arr, value) 
+{
    return arr.filter(function(ele){
-       return ele != value;
+      return ele != value;
    });
-
 }
 
 function showDuplicates(names)
 {
    var uniq = names
    .map((name) => {
-     return {count: 1, name: name}
+      return {count: 1, name: name}
    })
    .reduce((a, b) => {
-     a[b.name] = (a[b.name] || 0) + b.count
-     return a
+      a[b.name] = (a[b.name] || 0) + b.count
+      return a
    }, {})
-   
+
    var duplicates = Object.keys(uniq).filter((a) => uniq[a] > 1)
-   
+
    console.log(duplicates);
 }
 
@@ -145,7 +167,7 @@ function userCount()
    else if (totalCount)
    {
       userCountFinal = totalCount;
-   } 
+   }
    return (parseInt(userCountFinal * userCountFactor));
 }
 
@@ -191,6 +213,18 @@ var singlePerl = archroot + 'single.pl';
 var tag = null;
 var pgnFile = null;
 var fullzip = 0;
+var prevData = 0;
+var prevliveData = 0;
+var prevevalData = 0;
+var prevliveData1 = 0;
+var prevevalData1 = 0;
+var prevCrossData = 0;
+var prevSchedData = 0;
+var delta = {};
+var inprogress = 0;
+let room = "livelog";
+var lineArray = [];
+var lineChanged = 0;
 
 function checkLatestArchive()
 {
@@ -213,51 +247,47 @@ function checkLatestArchive()
 if (checkLatestArchive())
 {
    console.log ("Adding pgnfile:" + pgnFile);
-   watcher.add(pgnFile);
+   watcherSlow.add(pgnFile);
 }
 
-io.sockets.on ('connection', function(socket){    
+io.sockets.on ('connection', function(socket)
+{
    var socketId = socket.id;
    var clientIp = socket.request.connection.remoteAddress;
    count = socketArray.length;
+
    if (socketArray.indexOf(clientIp) === -1)
    {
       socketArray.push(clientIp);
-      if (socketArray.length % 100 == 0)
-      {
-         console.log ("count connected:" + userCount() + " , from serverXXXX:" + clientIp);
-         //io.local.emit('users', {'count': userCount()});
-      }
-      else
-      {
-         //socket.emit('users', {'count': userCount()});
-      }
    }
 
-   socket.on('room', function(room) {
+   socket.on('room', function(room) 
+   {
       socket.join(room);
    });
 
-   socket.on('noroom', function(room) {
+   socket.on('noroom', function(room) 
+   {
       socket.leave(room);
    });
 
    socket.on('disconnect', function()
    {
-       socketArray = arrayRemove(socketArray, clientIp);
+      socketArray = arrayRemove(socketArray, clientIp);
    });
 
-   //recieve client data
-   socket.on('getusers', function(data){
+   socket.on('getusers', function(data)
+   {
       socket.emit('users', {'count': userCount()});
    });
 
-   socket.on('refreshdata', function(data){
+   socket.on('refreshdata', function(data)
+   {
       if (delta)
       {
          delta.refresh = 1;
          delta.Users = userCount();
-         socket.emit('pgn', delta); 
+         socket.emit('pgn', delta);
          delta.refresh = 0;
          console.log ("Sent delta pgn data to connected socket:" + JSON.stringify(delta).length + ",changed" + clientIp + ", from serverXXXX:" + pid);
       }
@@ -265,7 +295,7 @@ io.sockets.on ('connection', function(socket){
       {
          prevData.refresh = 1;
          prevData.Users = userCount();
-         socket.emit('pgn', prevData); 
+         socket.emit('pgn', prevData);
          prevData.refresh = 0;
          console.log ("Sent full pgn data to connected socket:" + JSON.stringify(delta).length + ",changed" + clientIp + ", from serverXXXX:" + pid);
       }
@@ -307,7 +337,7 @@ function checkSend(currData, prevData)
    {
       console.log ("File "+ file + " did not change:");
       return 0;
-   }                    
+   }
    else
    {
       return 1;
@@ -329,20 +359,20 @@ function getDeltaPgn(pgnX)
       return pgnX;
    }
    pgnX.gameChanged = 0;
-   
+
    console.log ("Found prev data");
 
-  var keys = _.keys(pgnX);
-  _.each(keys, function(index, key) {
+   var keys = _.keys(pgnX);
+   _.each(keys, function(index, key) {
       if (index != "Moves")
-      { 
+      {
          pgn[index] = pgnX[index];
       }
       else
       {
          console.log ("Noy copying moves");
       }
-  });
+   });
 
    var maxKey = 0;
    pgn.Moves = [];
@@ -369,57 +399,106 @@ function getDeltaPgn(pgnX)
    return pgn;
 }
 
-var prevData = 0;
-var prevliveData = 0;
-var prevevalData = 0;
-var prevliveData1 = 0;
-var prevevalData1 = 0;
-var prevCrossData = 0;
-var prevSchedData = 0;
-var delta = {};
-var inprogress = 0;
+var liveChartInterval = setInterval(function() { sendlines(); }, 3000);
 
-var watcher1 = chokidar.watch('/var/www/json/main/live.log', {
-      persistent: true,
-      ignoreInitial: false,
-      followSymlinks: true,
-      disableGlobbing: false,
-      usePolling: true,
-      interval: 5000,
-      binaryInterval: 5000,
-      alwaysStat: false,
-      depth: 3
-      //atomic: true // or a custom 'atomicity delay', in milliseconds (default 100)
-});
-
-function sendlines(data)
+function sendlines()
 {
-   data = data.replace(/>/g, '');
-   data = data.replace(/</g, '');
-   data = data.replace(/'\n'/, '<br>');
-   io.sockets.in(room).emit('htmlread', data);
+   if (lineChanged)
+   {
+      if ((lineArray.length - 10) > 0)
+      {
+         lineArray.splice(0, lineArray.length - 10);
+      }
+      if (lineArray.length)
+      {
+         io.sockets.in(room).emit('htmlread', lineArray.join('\n'));
+      }
+      lineArray = [];
+      lineChanged = 0;
+   }
 }
 
-room = "livelog";
-
-watcher1.on('change', (path, stats) => {
-   readLastLines.read('/var/www/json/main/live.log', 20)
-    .then((lines) => sendlines(lines));
+const tail = new Tail('/var/www/json/loglive/livelink.log', {
+   persistent: true,
+   ignoreInitial: false,
+   followSymlinks: true,
+   disableGlobbing: false,
+   usePolling: true,
+   interval: 3000,
+   binaryInterval: 5000,
+   alwaysStat: false,
+   depth: 1
+   //atomic: true // or a custom 'atomicity delay', in milliseconds (default 100)
 });
 
-exec('./makelnk.sh ' + tag, function callback(error, stdout, stderr){
+tail.on('line', (line) => {
+   line = line.replace(/>/g, '');
+   line = line.replace(/</g, '');
+   lineArray.push(line);
+   lineChanged = 1;
+   //console.log ("line:" + lineArray);
+});
+
+tail.watch();
+
+var makeLink = '/scratch/tcec/Commonscripts/Divlink/makelnk.sh';
+
+exec(makeLink + ' ' + tag, function callback(error, stdout, stderr){
    console.log ("Error is :" + stderr);
    console.log ("Output is :" + stdout);
-    // result
 });
 
-watcher.on('change', (path, stats) => {
-   if (0)
+watcherFast.on('change', (path, stats) => 
+{
+   var content = fs.readFileSync(path, "utf8");
+   try
    {
-      console.log ("path changed:" + path + ",count is:" + userCount() + 
-                   " ,actual count is:" + parseInt(userCountActual() * userCountFactor) + 
-                   " ,server is :" + pid);
+      var data = JSON.parse(content);
+      if (path.match(/data.json/))
+      {
+         broadCastData(socket, 'liveeval', path, data, prevliveData);
+         prevliveData = data;
+      }
+      if (path.match(/data1.json/))
+      {
+         broadCastData(socket, 'liveeval1', path, data, prevliveData1);
+         prevliveData1 = data;
+      }
+      if (path.match(/liveeval.json/))
+      {
+         broadCastData(socket, 'livechart', path, data, prevevalData);
+         prevevalData = data;
+      }
+      if (path.match(/liveeval1.json/))
+      {
+         broadCastData(socket, 'livechart1', path, data, prevevalData1);
+         prevevalData1 = data;
+      }
+      if (path.match(/live.json/))
+      {
+         console.log ("json changed");
+         var changed = checkSend(data, prevData);
+         if (changed)
+         {
+            delta = getDeltaPgn(data, prevData);
+            //broadCastData(socket, 'pgn', path, delta, delta);
+            io.local.emit('pgn', delta);
+            console.log ("Sent pgn data:" + JSON.stringify(delta).length + ",orig" + JSON.stringify(data).length + ",changed" + delta.Users);
+            lastPgnTime = Date.now();
+         }
+         prevData = data;
+      }
    }
+   catch (error)
+   {
+      console.log ("error: " + error);
+      return;
+   }
+});
+
+watcherSlow.on('change', (path, stats) => 
+{
+   console.log ("slow path changed:" + path);
    if (path == pgnFile)
    {
       console.log ("Need to do something about pgnfile");
@@ -433,8 +512,8 @@ watcher.on('change', (path, stats) => {
             setTimeout(function() {
                io.emit('refreshsched', {'count': 1});
             }, 15000);
-         inprogress = 0;
-      });
+            inprogress = 0;
+         });
       }
       else
       {
@@ -444,43 +523,9 @@ watcher.on('change', (path, stats) => {
    else
    {
       var content = fs.readFileSync(path, "utf8");
-      try 
+      try
       {
          var data = JSON.parse(content);
-         if (path.match(/data.json/))
-         {
-            broadCastData(socket, 'liveeval', path, data, prevliveData);
-            prevliveData = data;
-         }
-         if (path.match(/data1.json/))
-         {
-            broadCastData(socket, 'liveeval1', path, data, prevliveData1);
-            prevliveData1 = data;
-         }
-         if (path.match(/liveeval.json/))
-         {
-            broadCastData(socket, 'livechart', path, data, prevevalData);
-            prevevalData = data;
-         }
-         if (path.match(/liveeval1.json/))
-         {
-            broadCastData(socket, 'livechart1', path, data, prevevalData1);
-            prevevalData1 = data;
-         }
-         if (path.match(/live.json/))
-         {
-            console.log ("json changed");
-            var changed = checkSend(data, prevData);
-            if (changed)
-            {
-               delta = getDeltaPgn(data, prevData);
-               //broadCastData(socket, 'pgn', path, delta, delta);
-               io.local.emit('pgn', delta); 
-               console.log ("Sent pgn data:" + JSON.stringify(delta).length + ",orig" + JSON.stringify(data).length + ",changed" + delta.Users);
-               lastPgnTime = Date.now(); 
-            }
-            prevData = data;
-         }
          if (path.match(/crosstable/))
          {
             broadCastData(socket, 'crosstable', path, data, prevCrossData);
@@ -493,10 +538,10 @@ watcher.on('change', (path, stats) => {
          }
          if (path.match(/banner/))
          {
-            io.local.emit('banner', data); 
+            io.local.emit('banner', data);
          }
       }
-      catch (error) 
+      catch (error)
       {
          console.log ("error: " + error);
          return;
@@ -504,7 +549,7 @@ watcher.on('change', (path, stats) => {
    }
 });
 
-process.on('message', function(msg) 
+process.on('message', function(msg)
 {
    console.log('Worker ' + process.pid + ' received message from master.', JSON.stringify(msg));
    totalCount = parseInt(msg.count);
