@@ -3510,8 +3510,6 @@ function updateLiveEvalDataHistory(engineDatum, fen, container, contno)
    {
       score = datum.eval;
    }
-	console.log("PVBEF!!!!!");
-	console.log(datum.pv);
    if (datum.pv.search(/.*\.\.\..*/i) == 0)
    {
       if (!isNaN(score))
