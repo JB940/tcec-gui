@@ -3629,6 +3629,7 @@ function updateLiveEvalDataHistory(engineDatum, fen, container, contno)
 }
 
 var regexBlackMove = /^[0-9]{1,3}\.\.\./;
+var clearedAnnotation = 0;
 
 /**
  ** Updates the Kibitzings' engine PV and arrow if enabled.
@@ -3650,7 +3651,7 @@ var regexBlackMove = /^[0-9]{1,3}\.\.\./;
 function updateLiveEvalData(datum, update, fen, contno, initial)
 {
    var container = '#live-eval-cont' + contno;
-	
+   
    if (contno == 1 && !showLivEng1)
    {
       $(container).html('');
@@ -3692,7 +3693,7 @@ function updateLiveEvalData(datum, update, fen, contno, initial)
       updateLiveEvalDataHistory(datum, fen, container, contno);
       return;
    }
-	
+   
    // Loose typing of JS makes silly things like this possible. not a number? returns "NaN"
    score = parseFloat(datum.eval).toFixed(2);
    if (score === "NaN")
@@ -3702,7 +3703,7 @@ function updateLiveEvalData(datum, update, fen, contno, initial)
    score = "" + score;
    //if isblackmove, invert sign.
    if(regexBlackMove.test(datum.pv)) {
-	  if (score.charAt(0) == "-") {
+     if (score.charAt(0) == "-") {
          score = "+" + score.substring(1);
       } else {
          score = "-" +score;
@@ -3724,18 +3725,18 @@ function updateLiveEvalData(datum, update, fen, contno, initial)
       var chess = new Chess(activeFen);
 
       var currentFen = activeFen;
-	
-	  var moveContainer = [];    
-	  var split = datum.pv.replace("...", ". .. ").split(' ');
-	  var length = split.length;
+   
+     var moveContainer = [];    
+     var split = datum.pv.replace("...", ". .. ").split(' ');
+     var length = split.length;
       for (var i = 0, moveCount = 0; i < length; i++) {
-		var str = split[i]
+      var str = split[i]
         if (isNaN(str.charAt(0)) && str != "..") {
           moveResponse = chess.move(str);
           if (!moveResponse || typeof moveResponse == 'undefined') {
                plog("undefine move" + str);
           } else {
-			 
+          
             currentFen = chess.fen();
             newPv = {
               'from': moveResponse.from,
@@ -3743,21 +3744,21 @@ function updateLiveEvalData(datum, update, fen, contno, initial)
               'm': moveResponse.san,
               'fen': currentFen
             };
-			
-			//we can build the html and the PV in the same loop. no need to do it three times
-			moveContainer.push("<a href='#' class='set-pv-board' live-pv-key='0' move-key='" + moveCount +
+         
+            //we can build the html and the PV in the same loop. no need to do it three times
+            moveContainer.push("<a href='#' class='set-pv-board' live-pv-key='0' move-key='" + moveCount +
                                                        "' engine='" + (contno) +
                                                        "' color='live'>" + moveResponse.san +
                                                        '</a>');
             currentLastMove = str.slice(-2);
             //pushing is the same as a union of an array with one item...
             pvs.push(newPv);
-			moveCount++;
+            moveCount++;
           }
         } else {
             moveContainer.push(str);
-		}
-     }
+          }
+      }
    }
    
    $(container).html('');
@@ -4021,7 +4022,7 @@ function playTwitchPlayer(doPlay) {
      twitchDiv.show();
   } else {
      twitchPlayer.pause();
-	 twitchDiv.hide();
+    twitchDiv.hide();
   }
 }
 
