@@ -427,13 +427,34 @@
                     </div>
                   </ul>
                 </li>
+
+                <div class="dropdown-divider"></div>
+                <li><a class="dropdown-item dropdown-toggle whitefont" href="#/">Livelog</a>
+                  <ul class="dropdown-menu bg-dark whitefont">
+                    <div class="form-check classpad">
+                      <input class="form-check-input" type="radio" name="LiveLogRadio" id="LiveLogRadio1" value="room5" onclick="setLiveLog(this);">
+                      <label class="form-check-label" for="LiveLogRadio">
+                        5 lines
+                    </div>
+                    <div class="form-check classpad">
+                      <input class="form-check-input" type="radio" name="LiveLogRadio" id="LiveLogRadio2" value="room10" onclick="setLiveLog(this);">
+                      <label class="form-check-label" for="LiveLogRadio">
+                        10 lines
+                    </div>
+                    <div class="form-check classpad">
+                      <input class="form-check-input" type="radio" name="LiveLogRadio" id="LiveLogRadio3" value="roomall" onclick="setLiveLog(this);">
+                      <label class="form-check-label" for="LiveLogRadio">
+                        All lines
+                    </div>
+                  </ul>
+                </li>
                 <div class="dropdown-divider"></div>
                 <li><a class="dropdown-item dropdown-toggle whitefont" href="#/">Crosstable</a>
                   <ul class="dropdown-menu bg-dark whitefont">
                     <div class="form-check" style="margin-left: 10px">
                       <input class="form-check-input" type="checkbox" onclick="checkSort(this)" value="" id="crosscheck">
                       <label class="form-check-label" for="defaultCheck1">
-                        Crashes
+                        Ignore crashes
                       </label>
                     </div>
                   </ul>
@@ -1626,7 +1647,11 @@ To play the games a special version of cutechess-cli is used. This is a command 
       //var socket = io.connect('https://tcecbonus.club:8010');
       var socket = io.connect('https://tcec.chessdom.com:8000');
 
-      socket.on('htmlread', function(data){
+      unlistenLogMain();
+
+      socket.on('htmlread', function(datal){
+         var data = datal.data;
+         console.log ("XXX: recieving data from log:" + datal.room);
          var div = document.getElementById('log-wrapper');
          var matches = data.split(/\n|\s\n/);
          data = matches.join("<br>");
@@ -1634,7 +1659,6 @@ To play the games a special version of cutechess-cli is used. This is a command 
          var n = d.toLocaleTimeString();
          div.innerHTML += "<h5><b><i><u>" + n + "</u></i></b></h5>" + "<p align=left>" + data + "</p>";
          div.scrollTop = div.scrollHeight;
-         console.log ("XXX: recieving data from log:" + data);
          });
 
       socket.on('crosstable', function(data){

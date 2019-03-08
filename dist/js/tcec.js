@@ -105,6 +105,7 @@ var twitchSRCIframe = 'https://player.twitch.tv/?channel=' + twitchAccount;
 var eventNameHeader = 0;
 var lastRefreshTime = 0;
 var userCount = 0;
+var globalRoom = 0;
 
 var onMoveEnd = function() {
   boardEl.find('.square-' + squareToHighlight)
@@ -2882,7 +2883,6 @@ function updateTourStat(data)
    var scdatainput = shallowCopy(data);
    var tinfo = [];
 
-   console.log("XXX: data is :" + strx(scheduleToTournamentInfo(scdatainput)));
    var tinfoData = scheduleToTournamentInfo(scdatainput);
    var gameNox = tinfoData.minMoves[1];
    tinfoData.minMoves = tinfoData.minMoves[0] + ' [' + '<a title="' + gameNox + '" style="cursor:pointer; color: ' +
@@ -3391,6 +3391,7 @@ function setDefaults()
    setBoard();
    setCrash();
    loadBoardMiddle();
+   setDefaultLiveLog();
 }
 
 function setDefaultThemes()
@@ -5140,22 +5141,6 @@ function loadBoardMiddle()
    }
 }
 
-function listenLog()
-{
-   if (socket)
-   {
-      socket.emit('room', 'livelog');
-   }
-}
-
-function unlistenLog()
-{
-   if (socket)
-   {
-      socket.emit('noroom', 'livelog');
-   }
-}
-
 function scheduleToTournamentInfo(schedJson)
 {
    let start = null;
@@ -5307,4 +5292,60 @@ function getLocalDate(startDate, minutes)
    momentDate.add(timezoneDiff);
    return(momentDate.format('HH:mm:ss on YYYY.MM.DD'));                                                                                                                                               }
 
+function setDefaultLiveLog()
+{
+   var roomNo = localStorage.getItem('tcec-engine-loglive');
+
+   if (roomNo != undefined)
+   {
+      globalRoom = roomNo;
+   }
+   else
+   {
+      globalRoom = 'room10';
+   }
+   $('input[value='+globalRoom+']').prop('checked', true);
+}
+
+function setLiveLog(livelog)
+{
+   localStorage.setItem('tcec-engine-loglive', livelog.value);
+   unlistenLogMain(0);
+   if (livelog.value)
+   {
+      globalRoom = livelog.value;
+   }
+   listenLog();
+}
+
+function listenLogMain(room)
+{
+   if (socket)
+   {
+      socket.emit('room', room);
+   }
+}
+
+function unlistenLogMain(room)
+{
+   globalRoom = 0;
+   if (socket)
+   {
+      socket.emit('noroom', room);
+   }
+}
+
+function listenLog()
+{
+   if (globalRoom == 0)
+   {
+      globalRoom = 'room10';
+   }
+   listenLogMain(globalRoom);
+}
+
+function unlistenLog()
+{
+   unlistenLogMain('livelog');
+}
 

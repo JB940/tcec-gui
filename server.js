@@ -240,7 +240,6 @@ var prevCrossData = 0;
 var prevSchedData = 0;
 var delta = {};
 var inprogress = 0;
-let room = "livelog";
 var lineArray = [];
 var lineChanged = 0;
 
@@ -281,12 +280,25 @@ io.sockets.on ('connection', function(socket)
 
    socket.on('room', function(room) 
    {
-      socket.join(room);
+      if (room == 'room5')
+      {
+         socket.join('room5');
+      }
+      if (room == 'room10')
+      {
+         socket.join('room10');
+      }
+      if (room == 'roomall')
+      {
+         socket.join('roomall');
+      }
    });
 
    socket.on('noroom', function(room) 
    {
-      socket.leave(room);
+      socket.leave('room5');
+      socket.leave('room10');
+      socket.leave('roomall');
    });
 
    socket.on('disconnect', function()
@@ -418,19 +430,35 @@ function getDeltaPgn(pgnX)
 }
 
 var liveChartInterval = setInterval(function() { sendlines(); }, 3000);
+function sendArrayRoom(array, room, count)
+{
+   var localArray = array;
+   
+   if (localArray.length)
+   {
+      if (localArray.length - count > 0)
+      {
+         localArray.splice(0, localArray.length - count);
+      }
+      if (localArray.length)
+      {
+         io.sockets.in(room).emit('htmlread', {'room': room, 'data': localArray.join('\n')});
+      }
+   }
+}
 
 function sendlines()
 {
    if (lineChanged)
    {
-      if ((lineArray.length - 10) > 0)
-      {
-         lineArray.splice(0, lineArray.length - 10);
-      }
-      if (lineArray.length)
-      {
-         io.sockets.in(room).emit('htmlread', lineArray.join('\n'));
-      }
+      var room5Array = lineArray;
+      var room10Array = lineArray;
+
+      sendArrayRoom(lineArray, 'room5', 5);
+      sendArrayRoom(lineArray, 'livelog', 5);
+      sendArrayRoom(lineArray, 'room10', 10);
+      sendArrayRoom(lineArray, 'roomall', 1000);
+
       lineArray = [];
       lineChanged = 0;
    }
@@ -442,7 +470,7 @@ const tail = new Tail('/var/www/json/loglive/livelink.log', {
    followSymlinks: true,
    disableGlobbing: false,
    usePolling: true,
-   interval: 3000,
+   interval: 1000,
    binaryInterval: 5000,
    alwaysStat: false,
    depth: 1
