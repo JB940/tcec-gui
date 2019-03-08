@@ -4920,44 +4920,16 @@ function initTables()
            title: 'End time'
        },
        {
-           field: 'minMoves',
-           title: 'Min Moves'
-       },
-       {
-         field: 'maxMoves',
-         title: 'Max Moves'
+         field: 'totalTime',
+         title: 'Duration',
        },
        {
          field: 'avgMoves',
          title: 'Avg Moves'
        },
        {
-         field: 'minTime',
-         title: 'Min Time'
-       },
-       {
-         field: 'maxTime',
-         title: 'Max Time'
-       },
-       {
          field: 'avgTime',
          title: 'Avg Time'
-       },
-       {
-         field: 'totalTime',
-         title: 'Tot Time'
-       },
-       {
-         field: 'winRateB',
-         title: 'Win Rate White'
-       },
-       {
-         field: 'winRateW',
-         title: 'Win Rate Black'
-       },
-       {
-         field: 'drawRate',
-         title: 'Draw Rate'
        },
        {
          field: 'whiteWins',
@@ -4968,8 +4940,28 @@ function initTables()
          title: 'Black wins'
        },
        {
+         field: 'drawRate',
+         title: 'Draw Rate'
+       },
+       {
          field: 'crashes',
          title: 'Crashes'
+       },
+       {
+           field: 'minMoves',
+           title: 'Min Moves'
+       },
+       {
+         field: 'maxMoves',
+         title: 'Max Moves'
+       },
+       {
+         field: 'minTime',
+         title: 'Min Time'
+       },
+       {
+         field: 'maxTime',
+         title: 'Max Time'
        }
      ]
    });
@@ -5239,14 +5231,16 @@ function scheduleToTournamentInfo(schedJson)
    ;
    data.avgMoves = Math.round(data.avgMoves/schedJson.length);
 
-   let draws = len - data.whiteWins - data.blackWins
-   data.drawRate = divide2Decimals(draws * 100,len) + "%";
+   let draws = compGames - data.whiteWins - data.blackWins
+   data.drawRate = divide2Decimals(draws * 100, compGames) + "%";
 
-   data.winRateW = divide2Decimals(data.whiteWins *100,len) + "%";
-   data.winRateB = divide2Decimals(data.blackWins *100,len) + "%";
-   data.avgTime = hhmmss(avgTime/compGames);
+   data.winRateW = divide2Decimals(data.whiteWins *100, compGames) + "%";
+   data.winRateB = parseFloat(divide2Decimals(data.blackWins *100, compGames)).toFixed(1) + "%";
+   data.avgTime = hhmm(avgTime/compGames);
    data.totalTime = hhmmss((avgTime/compGames)*len);
    data.endTime = getLocalDate(start, (avgTime/compGames)*(len/60));
+   data.whiteWins = data.whiteWins + ' [ ' + data.winRateW + ' ]';
+   data.blackWins = data.blackWins + ' [ ' + data.winRateB + ' ]';
    return data;
 }
 
@@ -5271,6 +5265,16 @@ function hmsToSecondsOnly(str) {
 function pad(num)
 {
     return ("0"+num).slice(-2);
+}
+
+function hhmm(secs)
+{
+  var minutes = Math.floor(secs / 60);
+  secs = secs%60;
+  var hours = Math.floor(minutes/60)
+  minutes = minutes%60;
+  return `${pad(hours)}:${pad(minutes)}`;
+  // return pad(hours)+":"+pad(minutes)+":"+pad(secs); for old browsers
 }
 
 function hhmmss(secs)
