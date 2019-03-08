@@ -98,6 +98,7 @@ var watcherFast = chokidar.watch(liveeval, {
    binaryInterval: 100,
    alwaysStat: false,
    depth: 3,
+   atomic: 100
    });
 
 /* Other chokidar options */
@@ -289,7 +290,7 @@ io.sockets.on ('connection', function(socket)
          delta.Users = userCount();
          socket.emit('pgn', delta);
          delta.refresh = 0;
-         console.log ("Sent delta pgn data to connected socket:" + JSON.stringify(delta).length + ",changed" + clientIp + ", from serverXXXX:" + pid);
+         //console.log ("Sent delta pgn data to connected socket:" + JSON.stringify(delta).length + ",changed" + clientIp + ", from serverXXXX:" + pid);
       }
       else if (prevData)
       {
@@ -297,7 +298,7 @@ io.sockets.on ('connection', function(socket)
          prevData.Users = userCount();
          socket.emit('pgn', prevData);
          prevData.refresh = 0;
-         console.log ("Sent full pgn data to connected socket:" + JSON.stringify(delta).length + ",changed" + clientIp + ", from serverXXXX:" + pid);
+         //console.log ("Sent full pgn data to connected socket:" + JSON.stringify(delta).length + ",changed" + clientIp + ", from serverXXXX:" + pid);
       }
       console.log('XXXXXX: req came' + lastPgnTime);
    });
@@ -335,7 +336,7 @@ function checkSend(currData, prevData)
 
    if (a == b)
    {
-      console.log ("File "+ file + " did not change:");
+      //console.log ("File "+ file + " did not change:");
       return 0;
    }
    else
@@ -360,7 +361,7 @@ function getDeltaPgn(pgnX)
    }
    pgnX.gameChanged = 0;
 
-   console.log ("Found prev data");
+   //console.log ("Found prev data");
 
    var keys = _.keys(pgnX);
    _.each(keys, function(index, key) {
@@ -370,7 +371,7 @@ function getDeltaPgn(pgnX)
       }
       else
       {
-         console.log ("Noy copying moves");
+         //console.log ("Noy copying moves");
       }
    });
 
@@ -467,6 +468,7 @@ watcherFast.on('change', (path, stats) =>
       if (path.match(/liveeval.json/))
       {
          broadCastData(socket, 'livechart', path, data, prevevalData);
+         console.log ("Sending /liveeval.json/");
          prevevalData = data;
       }
       if (path.match(/liveeval1.json/))
@@ -476,14 +478,14 @@ watcherFast.on('change', (path, stats) =>
       }
       if (path.match(/live.json/))
       {
-         console.log ("json changed");
+         //console.log ("json changed");
          var changed = checkSend(data, prevData);
          if (changed)
          {
             delta = getDeltaPgn(data, prevData);
             //broadCastData(socket, 'pgn', path, delta, delta);
             io.local.emit('pgn', delta);
-            console.log ("Sent pgn data:" + JSON.stringify(delta).length + ",orig" + JSON.stringify(data).length + ",changed" + delta.Users);
+            //console.log ("Sent pgn data:" + JSON.stringify(delta).length + ",orig" + JSON.stringify(data).length + ",changed" + delta.Users);
             lastPgnTime = Date.now();
          }
          prevData = data;
@@ -495,6 +497,21 @@ watcherFast.on('change', (path, stats) =>
       return;
    }
 });
+
+watcherFast
+  .on('add', path => console.log(`File ${path} has been added`))
+  .on('unlink', path => { console.log(`File ${path} has been removed`) ;
+                          if (path.match(/liveeval.*/))
+                          {
+                             console.log ("Trying to add path:" + path);
+                             setTimeout(function() { watcherFast.add(path)}, 30000);
+                             setTimeout(function() { watcherFast.add(path)}, 60000);
+                             setTimeout(function() { watcherFast.add(path)}, 90000);
+                             setTimeout(function() { watcherFast.add(path)}, 130000);
+                             watcherFast.add(path);
+                          }
+                        })
+  .on('error', error => console.log(`Watcher error: ${error}`));
 
 watcherSlow.on('change', (path, stats) => 
 {

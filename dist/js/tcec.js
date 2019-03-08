@@ -55,9 +55,9 @@ var debug = 0;
 var whiteEngineFull = null;
 var blackEngineFull = null;
 var prevwhiteEngineFull = null;
-var prevblackEngineFull = null   
+var prevblackEngineFull = null
 var prevwhiteEngineFullSc = null;
-var prevblackEngineFullSc = null   
+var prevblackEngineFullSc = null
 var h2hRetryCount = 0;
 var scrRetryCount = 0;
 
@@ -191,7 +191,7 @@ function updatePgnData(data, read)
 function updatePgn(resettime)
 {
    axios.get('live.json?no-cache' + (new Date()).getTime())
-   .then(function (response) 
+   .then(function (response)
    {
       if (!resettime)
       {
@@ -274,7 +274,7 @@ function startClock(color, currentMove, previousMove) {
 function stopClock(color) {
   if (color == 'white') {
     clearInterval(whiteClockInterval);
-    $('.white-to-move').hide();    
+    $('.white-to-move').hide();
   } else {
     clearInterval(blackClockInterval);
     $('.black-to-move').hide();
@@ -348,7 +348,7 @@ function setTimeUsed(color, time) {
   }
 }
 
-function setUsers(data) 
+function setUsers(data)
 {
    userCount = data.count;
    if (data.count != undefined)
@@ -365,7 +365,7 @@ function setUsersMain(count)
       userCount = count;
    }
 
-   try 
+   try
    {
       $('#event-overview').bootstrapTable('updateCell', {index: 0, field: 'Viewers', value: userCount});
    }
@@ -411,7 +411,7 @@ function setPgn(pgn)
 
    if (typeof pgn.Moves != 'undefined')
    {
-      plog ("XXX: Entered for pgn.Moves.length:" + pgn.Moves.length + " , round is :" + pgn.Headers.Round, 0);
+      plog ("XXX: Entered for pgn.Moves.length:" + pgn.Moves.length + " , round is :" + pgn.Headers.Round, 1);
    }
 
    if (crosstableData)
@@ -459,13 +459,13 @@ function setPgn(pgn)
    }
    else
    {
-      if (typeof pgn.Moves != 'undefined') 
+      if (typeof pgn.Moves != 'undefined')
       {
          prevPgnData = pgn;
       }
    }
 
-   if (typeof pgn.Moves != 'undefined') 
+   if (typeof pgn.Moves != 'undefined')
    {
       currentPlyCount = pgn.Moves.length;
    }
@@ -475,12 +475,12 @@ function setPgn(pgn)
        currentPosition = pgn.Moves[pgn.Moves.length-1].fen;
        moveFrom = pgn.Moves[pgn.Moves.length-1].from;
        moveTo = pgn.Moves[pgn.Moves.length-1].to;
-   
+
        currentGameActive = (pgn.Headers.Termination == 'unterminated');
        whiteToPlay = (currentPlyCount % 2 == 0);
      }
   }
-   
+
   if (!currentGameActive) {
     stopClock('white');
     stopClock('black');
@@ -494,15 +494,15 @@ function setPgn(pgn)
     }
   }
 
-  plog ("XXX: loadedPlies: " + loadedPlies + " ,currentPlyCount:" + currentPlyCount + 
-        " ,currentGameActive:" + currentGameActive + " ,gameActive:" + gameActive + " :gamechanged:" + pgn.gameChanged , 0);
+  plog ("XXX: loadedPlies: " + loadedPlies + " ,currentPlyCount:" + currentPlyCount +
+        " ,currentGameActive:" + currentGameActive + " ,gameActive:" + gameActive + " :gamechanged:" + pgn.gameChanged , 1);
   if (loadedPlies == currentPlyCount && (currentGameActive == gameActive)) {
     return;
   }
 
   if (timeDiffRead > 0)
   {
-     timeDiff = 0; 
+     timeDiff = 0;
   }
 
   let previousPlies = loadedPlies;
@@ -576,7 +576,7 @@ function setPgn(pgn)
     updateEnginePv('black', whiteToPlay, blackEval.pv);
   }
 
-  if (whiteToPlay) 
+  if (whiteToPlay)
   {
      if (pgn.Headers.WhiteTimeControl)
      {
@@ -598,18 +598,18 @@ function setPgn(pgn)
 
   defaultStartTime = (base * 60 * 1000);
 
-  if (currentGameActive) 
+  if (currentGameActive)
   {
-     if (whiteToPlay) 
+     if (whiteToPlay)
      {
         startClock('white', clockCurrentMove, clockPreviousMove);
-     } 
-     else 
+     }
+     else
      {
         startClock('black', clockCurrentMove, clockPreviousMove);
      }
   }
-  else 
+  else
   {
      stopClock('white');
      stopClock('black');
@@ -655,7 +655,7 @@ function setPgn(pgn)
        if (eventTmp = eventNameHeader.match(/TCEC Season (.*)/))
        {
           plog (eventTmp[1], 0);
-          pgn.Headers.Event = "S" + eventTmp[1]; 
+          pgn.Headers.Event = "S" + eventTmp[1];
           eventNameHeader = pgn.Headers.Event;
        }
     }
@@ -669,54 +669,54 @@ function setPgn(pgn)
       var movesToResignOrWin = 50;
       var movesTo50R = 50;
 
-      if (Math.abs(adjudication.Draw) <= 10 && pgn.Moves.length > 58) 
+      if (Math.abs(adjudication.Draw) <= 10 && pgn.Moves.length > 58)
       {
          movesToDraw = Math.max(Math.abs(adjudication.Draw), 69 - pgn.Moves.length);
       }
 
-      if (Math.abs(adjudication.ResignOrWin) < 11) 
+      if (Math.abs(adjudication.ResignOrWin) < 11)
       {
          movesToResignOrWin = Math.abs(adjudication.ResignOrWin);
       }
 
-      if (adjudication.FiftyMoves < 51) 
+      if (adjudication.FiftyMoves < 51)
       {
          movesTo50R = adjudication.FiftyMoves;
       }
 
-      if (movesTo50R < 50 && movesTo50R < movesToResignOrWin) 
+      if (movesTo50R < 50 && movesTo50R < movesToResignOrWin)
       {
-         if(movesTo50R == 1) 
+         if(movesTo50R == 1)
          {
             termination = movesTo50R + ' move 50mr'
-         } 
-         else 
+         }
+         else
          {
             termination = movesTo50R + ' moves 50mr'
          }
          pgn.Headers.movesTo50R = movesTo50R;
       }
 
-      if (movesToResignOrWin < 50 && movesToResignOrWin < movesToDraw && movesToResignOrWin < movesTo50R) 
+      if (movesToResignOrWin < 50 && movesToResignOrWin < movesToDraw && movesToResignOrWin < movesTo50R)
       {
-         if(movesToResignOrWin == 1) 
+         if(movesToResignOrWin == 1)
          {
             termination = movesToResignOrWin + ' ply win';
-         } 
-         else 
+         }
+         else
          {
             termination = movesToResignOrWin + ' plies win';
          }
          pgn.Headers.movesToResignOrWin = movesToResignOrWin;
       }
 
-      if (movesToDraw < 50 && movesToDraw <= movesTo50R && movesToDraw <= movesToResignOrWin) 
+      if (movesToDraw < 50 && movesToDraw <= movesTo50R && movesToDraw <= movesToResignOrWin)
       {
-         if (movesToDraw == 1) 
+         if (movesToDraw == 1)
          {
             termination = movesToDraw + ' ply draw';
-         } 
-         else 
+         }
+         else
          {
             termination = movesToDraw + ' plies draw';
          }
@@ -731,7 +731,7 @@ function setPgn(pgn)
       pgn.Headers.Termination = pgn.Headers.TerminationDetails;
       plog ("pgn.Headers.Termination: yes" + pgn.Headers.Termination, 0);
       if ((pgn.Headers.Termination == 'undefined') ||
-          (pgn.Headers.Termination == undefined))  
+          (pgn.Headers.Termination == undefined))
       {
          $('#event-overview').bootstrapTable('hideColumn', 'Termination');
          $('#event-overview').bootstrapTable('showColumn', 'movesToDraw');
@@ -749,7 +749,7 @@ function setPgn(pgn)
   }
 
   $('#event-overview').bootstrapTable('load', [pgn.Headers]);
-  setUsersMain(pgn.Users); 
+  setUsersMain(pgn.Users);
   $('#event-name').html(pgn.Headers.Event);
 
   if (viewingActiveMove) {
@@ -774,7 +774,7 @@ function setPgn(pgn)
     if (move.book == true)
     {
        linkClass += " green";
-       bookmove = ply;  
+       bookmove = ply;
     }
 
     var moveNotation = move.m;
@@ -888,11 +888,11 @@ function getNodes(nodes)
    {
       nodes = fixedDeci(parseFloat(nodes / (1000000 * 1000))) + 'B';
    }
-   else if (nodes > 1000000) 
+   else if (nodes > 1000000)
    {
       nodes = fixedDeci(parseFloat(nodes / (1000000 * 1))) + 'M';
-   } 
-   else 
+   }
+   else
    {
       nodes = fixedDeci(parseFloat(nodes / (1000* 1))) + 'K';
    }
@@ -908,12 +908,12 @@ function getTBHits(tbhits)
       if (tbhits < 1000)
       {
          tbHits = tbhits;
-      } 
+      }
       else if (tbhits < 1000000)
       {
          tbHits = fixedDeci(parseFloat(tbhits/ (1000* 1))) + 'K';
-      } 
-      else 
+      }
+      else
       {
          tbHits = fixedDeci(parseFloat(tbhits/ (1000000* 1))) + 'M';
       }
@@ -930,7 +930,7 @@ function getEvalFromPly(ply)
     side = 'Black';
   }
 
-  if (ply < 0) 
+  if (ply < 0)
   {
      return {
        'side': side,
@@ -943,7 +943,7 @@ function getEvalFromPly(ply)
        'tbhits': "n/a",
        'timeleft': "n/a"
      };
-  } 
+  }
 
   //arun
   if (ply < bookmove || (typeof selectedMove == 'undefined') || (typeof (selectedMove.pv) == 'undefined'))
@@ -959,7 +959,7 @@ function getEvalFromPly(ply)
        'tbhits': "book",
        'timeleft': "book"
      };
-  } 
+  }
 
   if (typeof selectedMove == 'undefined') {
     return '';
@@ -980,7 +980,7 @@ function getEvalFromPly(ply)
 
   var evalRet = '';
 
-  if (!isNaN(selectedMove.wv))  
+  if (!isNaN(selectedMove.wv))
   {
      evalRet = parseFloat(selectedMove.wv).toFixed(2);
   }
@@ -1073,7 +1073,7 @@ function getPct(engineName, eval)
       return (engineName + ' ' + eval);
       }
 
-   if (shortName == "LCZero")              
+   if (shortName == "LCZero")
    {
       return (getNNPct(shortName, eval));
    }
@@ -1086,7 +1086,7 @@ function getPct(engineName, eval)
 function updateMoveValues(whiteToPlay, whiteEval, blackEval)
 {
    /* Ben: Not sure why we need to update only if we are not viewing active move */
-   if (!viewingActiveMove) 
+   if (!viewingActiveMove)
    {
       $('.white-time-used').html(whiteEval.mtime);
       $('.black-time-used').html(blackEval.mtime);
@@ -1113,8 +1113,8 @@ function updateMoveValues(whiteToPlay, whiteEval, blackEval)
    var whiteEvalPt = getPct(loadedPgn.Headers.White, whiteEval.eval);
    $('.black-engine-name-full-new').html(blackEvalPt);
    $('.white-engine-name-full-new').html(whiteEvalPt);
-   //$(eval a=(((((Math.atan(($(query)100)/290.680623072))/3.096181612)+0.5)100)-50); 
-   //lose=Math.max(0,a-2); draw=(100-Math.max(win,lose)).toFixed(2); win=win.toFixed(2); lose=lose.toFixed(2); 
+   //$(eval a=(((((Math.atan(($(query)100)/290.680623072))/3.096181612)+0.5)100)-50);
+   //lose=Math.max(0,a-2); draw=(100-Math.max(win,lose)).toFixed(2); win=win.toFixed(2); lose=lose.toFixed(2);
    $('.white-engine-speed').html(whiteEval.speed);
    $('.white-engine-nodes').html(whiteEval.nodes);
    $('.white-engine-depth').html(whiteEval.depth);
@@ -1175,7 +1175,7 @@ function updateEnginePv(color, whiteToPlay, moves)
             classhigh = "active-pv-move";
             setpvmove = effectiveKey;
          }
-         if (color == "black" && key == 0) 
+         if (color == "black" && key == 0)
          {
             pvMoveNofloor = pvMoveNofloor + 1;
          }
@@ -1210,20 +1210,20 @@ function updateEnginePv(color, whiteToPlay, moves)
       }
       if (color == "white")
       {
-         if (effectiveKey % 2 == 0 ) 
+         if (effectiveKey % 2 == 0 )
          {
             $('#' + color + '-engine-pv').append(pvMove + '. ');
             $('#' + color + '-engine-pv2').append(pvMove + '. ');
             $('#' + color + '-engine-pv3').append(pvMove + '. ');
          }
-         else if (effectiveKey % 2 != 0 ) 
+         else if (effectiveKey % 2 != 0 )
          {
             $('#' + color + '-engine-pv').append(atsymbol);
             $('#' + color + '-engine-pv2').append(atsymbol);
             $('#' + color + '-engine-pv3').append(atsymbol);
          }
       }
-      
+
       if (color == "black" && effectiveKey % 2 != 0 ) {
         $('#' + color + '-engine-pv3').append(pvMove + '. ');
         $('#' + color + '-engine-pv').append(pvMove + '. ');
@@ -1232,7 +1232,7 @@ function updateEnginePv(color, whiteToPlay, moves)
 
       if (color == "black")
       {
-         if (color == "black" && key == 0 ) 
+         if (color == "black" && key == 0 )
          {
             $('#' + color + '-engine-pv').append(pvMove + '. ');
             $('#' + color + '-engine-pv2').append(pvMove + '. ');
@@ -1264,7 +1264,7 @@ function updateEnginePv(color, whiteToPlay, moves)
     {
        setpvmove = 0;
     }
-   if (color == 'white') 
+   if (color == 'white')
    {
       whitePv = moves;
       if (whitePv.length > 0)
@@ -1277,8 +1277,8 @@ function updateEnginePv(color, whiteToPlay, moves)
          activePv = whitePv.slice();
          setPvFromKey(setpvmove, 'white');
       }
-   } 
-   else 
+   }
+   else
    {
       blackPv = moves;
       if (blackPv.length > 0)
@@ -1286,7 +1286,7 @@ function updateEnginePv(color, whiteToPlay, moves)
          activePv = blackPv.slice();
          if (plyDiff == 2)
          {
-            setpvmove = blackPv.length - 1; 
+            setpvmove = blackPv.length - 1;
          }
          setPvFromKey(setpvmove, 'black');
       }
@@ -1330,16 +1330,16 @@ function findDiffPv(whitemoves, blackmoves)
       return;
    }
 
-   if (typeof whitemoves != 'undefined') 
+   if (typeof whitemoves != 'undefined')
    {
       currentMove = Math.floor(activePly / 2);
- 
-      if (!whiteToPlay) 
+
+      if (!whiteToPlay)
       {
          currentMove++;
       }
-      
-      _.each(whitemoves, function(move, key) 
+
+      _.each(whitemoves, function(move, key)
       {
          pvMove = currentMove + key;
          if (whiteToPlay)
@@ -1503,7 +1503,7 @@ $(document).on('click', '#board-reverse', function(e) {
   return false;
 });
 
-function handlePlyChange(handleclick) 
+function handlePlyChange(handleclick)
 {
    selectedId = 0;
    if (typeof handleclick == 'undefined')
@@ -1592,7 +1592,7 @@ $(document).on('click', '.set-pv-board', function(e) {
     // pvBoard.orientation('white');
   }
 
-  e.preventDefault(); 
+  e.preventDefault();
 
   return false;
 });
@@ -1948,7 +1948,7 @@ function setPieces(piece, value, whiteToPlay) {
     target = 'white-material';
     color = 'w';
   }
-  
+
   value = Math.abs(value);
 
   $('#white-material span.' + piece).html('');
@@ -1960,7 +1960,7 @@ function setPieces(piece, value, whiteToPlay) {
   }
 }
 
-function getLinkArch() 
+function getLinkArch()
 {
    var retLink;
 
@@ -2019,13 +2019,13 @@ function crossFormatter(value, row, index, field) {
    if (!value.hasOwnProperty("Score")) // true
    {
       return value;
-   } 
+   }
 
    var retStr = '';
    var valuex = _.get(value, 'Score');
    var countGames = 0;
 
-   _.each(valuex, function(engine, key) 
+   _.each(valuex, function(engine, key)
    {
       var gameX = parseInt(countGames/2);
       var gameXColor = parseInt(gameX%3);
@@ -2060,13 +2060,13 @@ function formatter(value, row, index, field) {
    if (!value.hasOwnProperty("Score")) // true
    {
       return value;
-   } 
+   }
 
    var retStr = '';
    var valuex = _.get(value, 'Score');
    var countGames = 0;
 
-   _.each(valuex, function(engine, key) 
+   _.each(valuex, function(engine, key)
    {
       var gameX = parseInt(countGames/2);
       var gameXColor = parseInt(gameX%3);
@@ -2097,7 +2097,7 @@ function formatter(value, row, index, field) {
   return retStr;
 }
 
-function crossCellformatter(value, row, index, field) 
+function crossCellformatter(value, row, index, field)
 {
    if (row.crashes >= 3)
    {
@@ -2110,7 +2110,7 @@ function cellformatter(value, row, index, field) {
    if (!value.hasOwnProperty("Score")) // true
    {
       return {classes: 'black'};
-   } 
+   }
    return {classes: 'monofont'};
 }
 
@@ -2138,7 +2138,7 @@ function getRating(engine, engName)
    {
       elo = engine.Rating;
    }
-   
+
    return elo;
 }
 
@@ -2147,7 +2147,7 @@ function findEloDiffOld (whiteEngine, blackEngine, whiteEngName, blackEngName, s
    var k = 10;
    var b_rating = blackEngine.Rating;
    var w_rating = whiteEngine.Rating;
-   var expected_score = 1 / (1 + Math.pow(10, (b_rating - w_rating) / 400 )); 
+   var expected_score = 1 / (1 + Math.pow(10, (b_rating - w_rating) / 400 ));
    var rating_diff = k * (score - expected_score);
    return rating_diff;
 }
@@ -2161,7 +2161,7 @@ function findEloDiff(whiteEngine, blackEngine, whiteEngName, blackEngName, score
    var e2 = r2/(r1+r2);
    var w_rating = whiteEngine.Rating + k * (score1 - e1);
    var b_rating = blackEngine.Rating + k * (score2 - e2);
-    
+
    whiteEngine.Rating = w_rating;
    blackEngine.Rating = b_rating;
 }
@@ -2171,7 +2171,7 @@ function getOverallElo(data)
    var eloDiff = 0;
 
    _.each(crosstableData.Table, function(engine, key) {
-      engine.Rating = getRating(engine, key); 
+      engine.Rating = getRating(engine, key);
       });
 
    _.each(crosstableData.Table, function(engine, key) {
@@ -2183,7 +2183,7 @@ function getOverallElo(data)
          var blackEngine = crosstableData.Table[oppkey];
          var strText = oppEngine.Text;
          var blackRating = blackEngine.Rating;
-         for (var i = 0; i < strText.length; i++) 
+         for (var i = 0; i < strText.length; i++)
          {
             plog ("strText.charAt(i): " + strText.charAt(i));
             if (strText.charAt(i) == '0')
@@ -2201,7 +2201,7 @@ function getOverallElo(data)
          }
          eloDiff = engine.Rating - engine.OrigRating;
          blackEngine.Rating = blackRating;
-      }); 
+      });
       engine.Rating = engine.OrigRating;
       engine.eloDiff = eloDiff;
       plog ("Final eloDiff: " + eloDiff + " ,fscore: " + parseInt(engine.Rating + eloDiff), 1);
@@ -2213,7 +2213,7 @@ function sleep(ms)
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-var crash_re = /^(?:TCEC|Syzygy|TB pos|in progress|(?:White|Black) mates|Stale|Insuff|Fifty|3-[fF]old)/; // All possible valid terminations (hopefully).  
+var crash_re = /^(?:TCEC|Syzygy|TB pos|in progress|(?:White|Black) mates|Stale|Insuff|Fifty|3-[fF]old)/; // All possible valid terminations (hopefully).
 
 function getEngRecSched(data, engineName)
 {
@@ -2272,7 +2272,7 @@ function getEngRecSched(data, engineName)
                if (!crash_re.test(engine.Termination))
                {
                   resultData.LossAsStrike = parseInt(resultData.LossAsStrike) + 1;
-                  engine.LossAsStrike = engine.LossAsStrike + 1; 
+                  engine.LossAsStrike = engine.LossAsStrike + 1;
                }
                resultData.LossAsWhite = parseInt(resultData.LossAsWhite) + 1;
             }
@@ -2382,7 +2382,7 @@ function updateScoreHeadersData()
                $('#white-engine-elo').html(data.Table[key].Rating);
                $('#black-engine-elo').html(data.Table[oppkey].Rating);
                var strText = oppEngine.Text;
-               for (var i = 0; i < strText.length; i++) 
+               for (var i = 0; i < strText.length; i++)
                {
                   plog ("strText.charAt(i): " + strText.charAt(i), 1);
                   plog ("Whitescore: " + whiteScore + ", blakcScore:" + blackScore + ",oppEngine.Text:" + oppEngine.Text, 1);
@@ -2399,17 +2399,17 @@ function updateScoreHeadersData()
                      blackScore = blackScore + 0.5;
                      whiteScore = whiteScore + 0.5;
                   }
-               } 
+               }
                $('.white-engine-score').html(whiteScore.toFixed(1));
                $('.black-engine-score').html(blackScore.toFixed(1));
             }
          }
-      }); 
+      });
    });
    plog ("Updated png elo:, whiteEngineFull:" + whiteEngineFull + " ,blackEngineFull:" + blackEngineFull, 0);
-   
+
    prevwhiteEngineFull = whiteEngineFull;
-   prevblackEngineFull = blackEngineFull;                                                                                                                                                        
+   prevblackEngineFull = blackEngineFull;
 
    return 0;
 }
@@ -2419,6 +2419,7 @@ function fixOrder()
    var crossData = crosstableData;
    var arr = [];
    var count = 0;
+   var debug = 1;
 
    _.each(crosstableData.Table, function(engine, key) {
       arr [count] = engine.Score;
@@ -2428,7 +2429,7 @@ function fixOrder()
 
    var sorted = arr.slice().sort(function(a,b){return b-a})
    var ranks = arr.slice().map(function(v){ return sorted.indexOf(v)+1 });
-   plog ("Ranks is :" + ranks, 0);
+   plog ("Ranks is :" + ranks, debug);
    count = 0;
    var tiePoints = 0;
 
@@ -2441,7 +2442,7 @@ function fixOrder()
    _.each(crosstableData.Table, function(engine, key) {
       engine.Neustadtl = 0;
       tiePoints = 0;
-      
+
       _.each(crosstableData.Table, function(iengine, ikey) {
          if (ikey != key)
          {
@@ -2470,7 +2471,7 @@ function fixOrder()
                engine.Neustadtl = 0;
             }
 
-            plog ("iengine.Rank:" + iengine.Rank + ikey + ",engine.Rank:" + engine.Rank + key, 1);
+            plog ("iengine.Rank:" + iengine.Rank + ikey + ",engine.Rank:" + engine.Rank + key, debug);
             if (parseInt(iengine.Rank) && parseInt(engine.Rank) == parseInt(iengine.Rank))
             {
                if (engine.Strikes)
@@ -2479,21 +2480,21 @@ function fixOrder()
                }
                else
                {
-                  plog ("engine.Strikes: " + engine.Results[ikey].Text, 1);
+                  plog ("engine.Strikes: " + engine.Results[ikey].Text, debug);
                   if (sbCount > engine.Results[ikey].Text.length/2)
                   {
-                     plog ("key won:" + key, 0);
-                     tiePoints = tiePoints + 1/100; 
+                     plog ("key won:" + key, debug);
+                     tiePoints = tiePoints + 1/100;
                   }
                   else if (sbCount < engine.Results[ikey].Text.length/2)
                   {
-                     plog ("key lost:" + key, 0);
-                     tiePoints = tiePoints + 0/100; 
+                     plog ("key lost:" + key, debug);
+                     tiePoints = tiePoints + 0/100;
                   }
                   else
                   {
-                     plog ("key drew:" + key, 0);
-                     tiePoints = tiePoints + 0.5/100; 
+                     plog ("key drew:" + key, debug);
+                     tiePoints = tiePoints + 0.5/100;
                   }
                }
             }
@@ -2505,26 +2506,26 @@ function fixOrder()
       tiePoints = tiePoints + engine.Rating/(100 * 100 * 1000 * 1000);
       tiePoints = tiePoints + count/(100 * 100 * 1000 * 1000 * 1000);
       arr[count] = parseFloat(parseFloat(engine.Score) + parseFloat(tiePoints/10));
-      plog ("tiePoints is :" + tiePoints + ", count is :" + arr[count] + " , name is :" + key + ", score:" + engine.Score, 0);
+      plog ("tiePoints is :" + tiePoints + ", count is :" + arr[count] + " , name is :" + key + ", score:" + engine.Score, debug);
       count = count + 1;
    });
 
    var sorted = arr.slice().sort(function(b,a){return a-b})
    var ranks = arr.slice().map(function(v){ return sorted.indexOf(v)+1 });
    count = 0;
-   plog ("rank kenght us :" + ranks.length, 1);
-   plog ("Ranks is :" + ranks, 0);
+   plog ("rank kenght us :" + ranks.length, debug);
+   plog ("Ranks is :" + ranks, debug);
    //crosstableData.Order = ranks;
 
    _.each(crosstableData.Table, function(engine, key) {
       engine.Rank = ranks[count];
-      plog ("engine.Rank-1 is :" + ranks[count] + " ,count:" + count, 0);
+      plog ("engine.Rank-1 is :" + ranks[count] + " ,count:" + count, debug);
       count = count + 1;
       crosstableData.Order[engine.Rank-1] = key;
       });
 }
 
-async function updateCrosstableData(data) 
+async function updateCrosstableData(data)
 {
    crosstableData = data;
    plog ("Updating crosstable:", 0);
@@ -2568,7 +2569,7 @@ async function updateCrosstableData(data)
    fixOrder();
 
    _.each(crosstableData.Order, function(engine, key) {
-      plog ("ADding entry:" + engine, 0);
+      plog ("ADding entry:" + engine, 1);
       engineDetails = _.get(crosstableData.Table, engine);
       var getEngRes = getEngRecSched(oldSchedData, engine);
       wins = (getEngRes.WinAsWhite + getEngRes.WinAsBlack);
@@ -2722,7 +2723,7 @@ function readTourInfo()
    {
       updateTourInfo(response.data);
    })
-   .catch(function (error) 
+   .catch(function (error)
    {
       plog(error, 0);
    });
@@ -2735,20 +2736,20 @@ function updateEngRating()
    {
       updateEngRatingData(response.data);
    })
-   .catch(function (error) 
+   .catch(function (error)
    {
       plog(error, 0);
    });
 }
 
-function updateCrosstable() 
+function updateCrosstable()
 {
    axios.get('crosstable.json')
    .then(function (response)
    {
       updateCrosstableData(response.data);
    })
-   .catch(function (error) 
+   .catch(function (error)
    {
       // handle error
       plog(error, 0);
@@ -2765,7 +2766,7 @@ function shallowCopy(data)
    return JSON.parse(JSON.stringify(data));
 }
 
-function updateH2hData(h2hdataip) 
+function updateH2hData(h2hdataip)
 {
    if (h2hRetryCount < 10 &&
        ((prevwhiteEngineFullSc != null &&
@@ -2773,9 +2774,9 @@ function updateH2hData(h2hdataip)
         (prevblackEngineFullSc != null &&
          blackEngineFull == prevblackEngineFullSc)))
    {
-      plog ("H2h did not get updated, lets retry later: prevwhiteEngineFull:" + 
-            prevwhiteEngineFullSc + 
-            " ,whiteEngineFull:" + whiteEngineFull + 
+      plog ("H2h did not get updated, lets retry later: prevwhiteEngineFull:" +
+            prevwhiteEngineFullSc +
+            " ,whiteEngineFull:" + whiteEngineFull +
             " ,h2hRetryCount:" + h2hRetryCount +
             " ,prevblackEngineFull:" + prevblackEngineFullSc + " ,blackEngineFull:" + blackEngineFull, 0);
       h2hRetryCount = h2hRetryCount + 1;
@@ -2801,7 +2802,7 @@ function updateH2hData(h2hdataip)
    var schedEntry = {};
    var data = shallowCopy(h2hdataip);
 
-   _.each(data, function(engine, key) 
+   _.each(data, function(engine, key)
    {
       engine.Gamesort = engine.Game;
       if (engine.Start)
@@ -2834,7 +2835,7 @@ function updateH2hData(h2hdataip)
       }
       engine.FixWhite = engine.White;
       engine.FixBlack = engine.Black;
- 
+
       if (engine.Result != undefined)
       {
          if (engine.Result == "1/2-1/2")
@@ -2871,7 +2872,55 @@ function updateH2hData(h2hdataip)
    $('#h2h').bootstrapTable('load', h2hdata);
 }
 
-function updateScheduleData(scdatainput) 
+function updateGame(game)
+{
+   openCross(game);
+}
+
+function updateTourStat(data)
+{
+   var scdatainput = shallowCopy(data);
+   var tinfo = [];
+
+   console.log("XXX: data is :" + strx(scheduleToTournamentInfo(scdatainput)));
+   var tinfoData = scheduleToTournamentInfo(scdatainput);
+   var gameNox = tinfoData.minMoves[1];
+   tinfoData.minMoves = tinfoData.minMoves[0] + ' [' + '<a title="' + gameNox + '" style="cursor:pointer; color: ' +
+                        gameArrayClass[1] + ';"onclick="updateGame(' + gameNox + ')">' + gameNox + '</a>' + ']';
+   gameNox = tinfoData.maxMoves[1];
+   tinfoData.maxMoves = tinfoData.maxMoves[0] + ' [' + '<a title="' + gameNox + '" style="cursor:pointer; color: ' +
+                        gameArrayClass[1] + ';"onclick="updateGame(' + gameNox + ')">' + gameNox + '</a>' + ']';
+   gameNox = tinfoData.minTime[1];
+   tinfoData.minTime = tinfoData.minTime[0] + ' [' + '<a title="' + gameNox + '" style="cursor:pointer; color: ' +
+                        gameArrayClass[1] + ';"onclick="updateGame(' + gameNox + ')">' + gameNox + '</a>' + ']';
+   gameNox = tinfoData.maxTime[1];
+   tinfoData.maxTime = tinfoData.maxTime[0] + ' [' + '<a title="' + gameNox + '" style="cursor:pointer; color: ' +
+                        gameArrayClass[1] + ';"onclick="updateGame(' + gameNox + ')">' + gameNox + '</a>' + ']';
+   var crashes = tinfoData.crashes[1];
+   if (crashes.length)
+   {
+      tinfoData.crashes = tinfoData.crashes[0] + ' [';
+      for (let i = 0 ; i < crashes.length ; i++)
+      {
+         var gameNox = crashes[i];
+         tinfoData.crashes += '<a title="' + gameNox + '" style="cursor:pointer; color: ' + gameArrayClass[0] + ';"onclick="updateGame(' + gameNox + ')">' + gameNox + '</a>';
+         if (i < crashes.length - 1)
+         {
+            tinfoData.crashes += ',';
+         }
+      }
+      tinfoData.crashes += ']';
+   }
+   else
+   {
+      tinfoData.crashes = 0;
+   }
+
+   tinfo = _.union(tinfo, [tinfoData]);
+   $('#tf').bootstrapTable('load', tinfo);
+}
+
+function updateScheduleData(scdatainput)
 {
    plog ("Updating schedule:", 0);
    var scdata = [];
@@ -2883,8 +2932,9 @@ function updateScheduleData(scdatainput)
    var schedEntry = {};
    oldSchedData = shallowCopy(scdatainput);
    var data = shallowCopy(scdatainput);
+   updateTourStat(scdatainput);
 
-   _.each(data, function(engine, key) 
+   _.each(data, function(engine, key)
    {
       engine.Gamesort = engine.Game;
       if (engine.Start)
@@ -2916,7 +2966,7 @@ function updateScheduleData(scdatainput)
       }
       engine.FixWhite = engine.White;
       engine.FixBlack = engine.Black;
- 
+
       if (engine.Result != undefined)
       {
          if (engine.Result == "1/2-1/2")
@@ -2939,36 +2989,30 @@ function updateScheduleData(scdatainput)
 
    $('#schedule').bootstrapTable('load', scdata);
    scheduleHighlight();
-   $("#schedule").on("click-cell.bs.table", function (field, value, row, $el) {                                                                                                                       
-      if ($el.agame <= gamesDone)
-      {
-         openCross($el.agame);                                                                                                                                                                     
-      }
-   }); 
 }
 
-function scheduleHighlight(noscroll)                                                                                                                                                                  
-{                                                                                                                                                                                                     
-   var options = $('#schedule').bootstrapTable('getOptions');                                                                                                                                         
-   var classSet = 'blacktds';                                                                                                                                                                         
-   pageNum = parseInt(globalGameno/options.pageSize) + 1;                                                                                                                                             
-   $('#schedule').bootstrapTable('selectPage', pageNum);                                                                                                                                              
-   var index = globalGameno - (pageNum - 1) * options.pageSize;                                                                                                                                       
-   var top = 0;                                                                                                                                                                                       
-   $('#schedule').find('tbody tr').each(function (i) {                                                                                                                                                
-      if (i < index) {                                                                                                                                                                                
-         top += $(this).height();                                                                                                                                                                     
-         }                                                                                                                                                                                            
-      });                                                                                                                                                                                             
-   if (!darkMode)                                                                                                                                                                                     
-   {                                                                                                                                                                                                  
-      classSet = 'whitetds';                                                                                                                                                                          
-   }                                                                                                                                                                                                  
-   $('#schedule tr').removeClass(classSet);                                                                                                                                                           
-   $('#schedule tr:eq('+index+')').addClass(classSet);                                                                                                                                                
-}                                                                                                                                                                                                     
-          
-function updateWinnersData(winnerData) 
+function scheduleHighlight(noscroll)
+{
+   var options = $('#schedule').bootstrapTable('getOptions');
+   var classSet = 'blacktds';
+   pageNum = parseInt(globalGameno/options.pageSize) + 1;
+   $('#schedule').bootstrapTable('selectPage', pageNum);
+   var index = globalGameno - (pageNum - 1) * options.pageSize;
+   var top = 0;
+   $('#schedule').find('tbody tr').each(function (i) {
+      if (i < index) {
+         top += $(this).height();
+         }
+      });
+   if (!darkMode)
+   {
+      classSet = 'whitetds';
+   }
+   $('#schedule tr').removeClass(classSet);
+   $('#schedule tr:eq('+index+')').addClass(classSet);
+}
+
+function updateWinnersData(winnerData)
 {
    plog ("Updating winners:", 0);
    var scdata = [];
@@ -2980,7 +3024,7 @@ function updateWinnersData(winnerData)
    var schedEntry = {};
    var data = shallowCopy(winnerData);
 
-   _.each(data, function(engine, key) 
+   _.each(data, function(engine, key)
    {
       var redColor = 'darkred';
       var link = "\'" + engine.link + "\'";
@@ -2991,10 +3035,10 @@ function updateWinnersData(winnerData)
    $('#winner').bootstrapTable('load', scdata);
 }
 
-function updateWinners() 
+function updateWinners()
 {
     axios.get('winners.json')
-    .then(function (response) 
+    .then(function (response)
     {
       updateWinnersData(response.data);
     })
@@ -3004,10 +3048,10 @@ function updateWinners()
     });
 }
 
-function updateSchedule() 
+function updateSchedule()
 {
     axios.get('schedule.json')
-    .then(function (response) 
+    .then(function (response)
     {
       updateScheduleData(response.data);
       updateH2hData(response.data);
@@ -3019,25 +3063,25 @@ function updateSchedule()
 }
 
 function pad(pad, str) {
-  if (typeof str === 'undefined') 
+  if (typeof str === 'undefined')
     return pad;
   return (pad + str).slice(-pad.length);
 }
 
 var game = new Chess();
 
-var onDragStart = function(source, piece, position, orientation) 
+var onDragStart = function(source, piece, position, orientation)
 {
    if (game.game_over() === true ||
          (game.turn() === 'w' && piece.search(/^b/) !== -1) ||
-         (game.turn() === 'b' && piece.search(/^w/) !== -1)) 
+         (game.turn() === 'b' && piece.search(/^w/) !== -1))
    {
       return false;
    }
 };
-  
+
 var onDragMove = function(newLocation, oldLocation, source,
-                          piece, position, orientation) 
+                          piece, position, orientation)
 {
    var move = game.move({
       from: newLocation,
@@ -3053,7 +3097,7 @@ var onDragMove = function(newLocation, oldLocation, source,
    if (activePvKey[2] == 0)
    {
       activePv[0] = {};
-      activePv[0].fen = fen; 
+      activePv[0].fen = fen;
    }
    var moveFrom = oldLocation;
    var moveTo = newLocation;
@@ -3089,7 +3133,7 @@ function drawGivenBoardDrag(cont, boardNotation)
       appearSpeed: 1,
       draggable: true,
       onDragStart: onDragStart,
-      onDrop: onDragMove,   
+      onDrop: onDragMove,
       boardTheme: window[btheme + "_board_theme"],
       overlay: true
    });
@@ -3128,7 +3172,7 @@ function setBoardInit()
 
    pvBoarda = drawGivenBoardDrag('pv-boarda', boardNotationPv);
    board = drawGivenBoard('board', boardNotation);
-   
+
    if (!boardArrows) {
     board.clearAnnotation();
    }
@@ -3178,7 +3222,7 @@ function setBoard()
    $('input[value='+btheme+'b]').prop('checked', true);
    $('input[value='+ptheme+'p]').prop('checked', true);
 
-   if (prevPgnData && prevPgnData.Moves.length > 0) 
+   if (prevPgnData && prevPgnData.Moves.length > 0)
    {
       boardEl.find('.' + squareClass).removeClass(highlightClass);
       boardEl.find('.square-' + moveFrom).addClass(highlightClass);
@@ -3353,11 +3397,11 @@ function setDefaultThemes()
 {
    var darkMode = localStorage.getItem('tcec-dark-mode');
 
-   if (darkMode == 20) 
+   if (darkMode == 20)
    {
       setDark();
-   } 
-   else 
+   }
+   else
    {
       setLight();
    }
@@ -3398,10 +3442,10 @@ function setDefaultEnginecolor()
 
 function setEngineColor(color)
 {
-   engine2colorno = color; 
+   engine2colorno = color;
    localStorage.setItem('tcec-engine-color', color);
    drawEval();
-   updateChartData(); 
+   updateChartData();
 }
 
 function updateLiveEvalInit()
@@ -3532,14 +3576,14 @@ function updateLiveEvalDataHistory(engineDatum, fen, container, contno)
     {
        engineDatum.engine = datum.engine;
     }
-    
+
     parseScore = 0.00;
     if (isNaN(engineDatum.eval)) {
       parseScore = engineDatum.eval;
     } else {
       parseScore = (engineDatum.eval * 1).toFixed(2);
     }
-    
+
     var evalStr = getPct(engineDatum.engine, parseScore);
     $(container).append('<h6>' + evalStr + ' PV(A) ' + '</h6><small>[D: ' + engineDatum.depth + ' | TB: ' + engineDatum.tbhits + ' | Sp: ' + engineDatum.speed + ' | N: ' + engineDatum.nodes +']</small>');
     var moveContainer = [];
@@ -3591,12 +3635,12 @@ function updateLiveEvalData(datum, update, fen, contno, initial)
 
    if (contno == 1 && !showLivEng1)
    {
-      $(container).html(''); 
+      $(container).html('');
       return;
    }
    if (contno == 2 && !showLivEng2)
    {
-      $(container).html(''); 
+      $(container).html('');
       return;
    }
 
@@ -3709,16 +3753,16 @@ function updateLiveEvalData(datum, update, fen, contno, initial)
     {
        engineDatum.engine = datum.engine;
     }
-    
+
     parseScore = 0.00;
     if (isNaN(engineDatum.eval)) {
       parseScore = engineDatum.eval;
     } else {
       parseScore = (engineDatum.eval * 1).toFixed(2);
     }
-   
+
     var evalStr = getPct(engineDatum.engine, parseScore);
-    
+
     $(container).append('<h6>' + evalStr + ' PV(A) ' + '</h6><small>[D: ' + engineDatum.depth + ' | TB: ' + engineDatum.tbhits + ' | Sp: ' + engineDatum.speed + ' | N: ' + engineDatum.nodes +']</small>');
     var moveContainer = [];
     if (livePvsC.length > 0) {
@@ -3743,7 +3787,7 @@ function updateLiveEvalData(datum, update, fen, contno, initial)
             moveContainer = _.union(moveContainer, [move]);
           }
         });
-        
+
         if (boardArrows) {
           if (pvKey == 0) {
             color = 'blue';
@@ -3795,9 +3839,9 @@ function updateLiveEval() {
    });
 }
 
-function updateLiveChartData(data, contno) 
+function updateLiveChartData(data, contno)
 {
-   if (typeof data.moves != 'undefined') 
+   if (typeof data.moves != 'undefined')
    {
       if (contno == 1)
       {
@@ -3822,7 +3866,7 @@ function updateLiveChartData(data, contno)
    }
 }
 
-function updateLiveChart() 
+function updateLiveChart()
 {
    axios.get('liveeval.json')
    .then(function (response) {
@@ -3842,7 +3886,7 @@ function updateLiveChart()
    });
 }
 
-function updateStandtableData(data) 
+function updateStandtableData(data)
 {
    plog ("Updating standtable:", 0);
    var standtableData = data;
@@ -3888,7 +3932,7 @@ function updateStandtableData(data)
        } else {
          resultDetails = _.get(engineDetails, 'Results');
          matchDetails = _.get(resultDetails, engineName);
-         score2 = 
+         score2 =
             {
                Score: matchDetails.Scores,
                Text: matchDetails.Text
@@ -3923,7 +3967,7 @@ function updateStandtableData(data)
    ];
    _.each(standtableData.Order, function(engine, key) {
      engineDetails = _.get(standtableData.Table, engine);
-     columns = _.union(columns, [{field: engineDetails.Abbreviation, title: engineDetails.Abbreviation, 
+     columns = _.union(columns, [{field: engineDetails.Abbreviation, title: engineDetails.Abbreviation,
                                   formatter: formatter, cellStyle: cellformatter}]);
    });
 
@@ -3932,20 +3976,20 @@ function updateStandtableData(data)
      classes: 'table table-striped table-no-bordered',
      sortName: 'rank'
    });
-     
+
      standTableInitialized = true;
    }
    $('#standtable').bootstrapTable('load', standings);
 }
 
-function updateStandtable() 
+function updateStandtable()
 {
    axios.get('crosstable.json')
    .then(function (response)
    {
       //updateStandtableData(response.data);
    })
-   .catch(function (error) 
+   .catch(function (error)
    {
       // handle error
       console.log(error);
@@ -3969,26 +4013,26 @@ function checkTwitch(checkbox) {
    playTwitchPlayer(!checkbox.checked);
 }
 
-				
-function setTwitch() {   
+
+function setTwitch() {
    let getVideoCheck = localStorage.getItem('tcec-twitch-video');
 
    let doPlay = getVideoCheck == undefined || getVideoCheck == 0;
    $('#twitchcheck').prop('checked', !doPlay);
-   
+
    let options = {
      width: 340,
      height: 400,
      channel: twitchAccount,
    };
-  
+
    twitchPlayer = new Twitch.Player("twitchvid", options);
    twitchPlayer.setVolume(0.0);
    twitchPlayer.setMuted(true);
    twitchPlayer.addEventListener(Twitch.Player.READY, function() {
       setTimeout(function() { playTwitchPlayer(doPlay); },2000);
    });
-   
+
    twitchPlayer.addEventListener(Twitch.Player.PLAYING, function() {
       let quality;
       while (quality == null || quality.length === 0) {
@@ -4153,7 +4197,7 @@ function checkSound(checkbox)
 
 function setCrash()
 {
-   var getSound = localStorage.getItem('tcec-cross-crash');        
+   var getSound = localStorage.getItem('tcec-cross-crash');
    var cont = '#crosscheck';
    if (getSound == undefined || getSound == 0)
    {
@@ -4169,7 +4213,7 @@ function setCrash()
 
 function setSound()
 {
-   var getSound = localStorage.getItem('tcec-sound-video');        
+   var getSound = localStorage.getItem('tcec-sound-video');
    var cont = '#soundcheck';
    if (getSound == undefined || getSound == 0)
    {
@@ -4185,7 +4229,7 @@ function setSound()
 
 function setNotationPvDefault()
 {
-   var getHighL = localStorage.getItem('tcec-notation-pvx');        
+   var getHighL = localStorage.getItem('tcec-notation-pvx');
    var cont = '#nottcheckpv';
 
    if (getHighL == undefined || getHighL == 0)
@@ -4202,7 +4246,7 @@ function setNotationPvDefault()
 
 function setNotationDefault()
 {
-   var getHighL = localStorage.getItem('tcec-notation');        
+   var getHighL = localStorage.getItem('tcec-notation');
    var cont = '#nottcheck';
 
    if (getHighL == undefined || getHighL == 0)
@@ -4261,7 +4305,7 @@ function setHighLightMainPv(getHighL)
 
 function setHighlightDefaultPv()
 {
-   var getHighL = localStorage.getItem('tcec-highlight-pv');        
+   var getHighL = localStorage.getItem('tcec-highlight-pv');
 
    if (getHighL == undefined)
    {
@@ -4294,7 +4338,7 @@ function setHighLightMain(getHighL)
 
 function setHighlightDefault()
 {
-   var getHighL = localStorage.getItem('tcec-highlight');        
+   var getHighL = localStorage.getItem('tcec-highlight');
 
    if (getHighL == undefined)
    {
@@ -4315,7 +4359,7 @@ function setHighlight(value)
 
 function setMoveArrowsDefault()
 {
-   var getHighL = localStorage.getItem('tcec-move-arrows');     
+   var getHighL = localStorage.getItem('tcec-move-arrows');
    var cont = '#notacheck';
 
    if (getHighL == undefined || getHighL == 1)
@@ -4341,7 +4385,7 @@ function setMoveArrows(checkbox)
    {
       localStorage.setItem('tcec-move-arrows', 1);
       boardArrows = true;
-   } 
+   }
    setBoard();
 }
 
@@ -4396,7 +4440,7 @@ var columnsEng = [
 }
 ];
 
-function updateEngineInfo(divx, divimg, data) 
+function updateEngineInfo(divx, divimg, data)
 {
    $(divx).bootstrapTable('load', data);
    addToolTip(divx, divimg);
@@ -4564,10 +4608,10 @@ function endButton()
    }
 };
 
-function tcecHandleKey(e) 
+function tcecHandleKey(e)
 {
     var keycode, oldPly, oldVar, colRow, colRowList;
-    if (!e) 
+    if (!e)
     {
         e = window.event
     }
@@ -4577,7 +4621,7 @@ function tcecHandleKey(e)
     }
 
     switch (keycode)
-    {  
+    {
         case 37:
             backButton();
             break;
@@ -4596,13 +4640,13 @@ function tcecHandleKey(e)
     return stopEvProp(e)
 }
 
-function simpleAddEvent(obj, evt, cbk) 
+function simpleAddEvent(obj, evt, cbk)
 {
-   if (obj.addEventListener) 
+   if (obj.addEventListener)
    {
       obj.addEventListener(evt, cbk, !1)
-   } 
-   else if (obj.attachEvent) 
+   }
+   else if (obj.attachEvent)
    {
       obj.attachEvent("on" + evt, cbk)
    }
@@ -4693,7 +4737,7 @@ function initTables()
        {
            field: 'Gamesort',
            title: 'sortnumber',
-           visible: false 
+           visible: false
        },
        {
            field: 'h2hrank',
@@ -4707,7 +4751,7 @@ function initTables()
            field: 'FixWhite',
            title: 'White'
            ,sortable: true
-       }, 
+       },
        {
          field: 'WhiteEv',
          title: 'W.Ev'
@@ -4776,12 +4820,12 @@ function initTables()
        pageList: [10,20,50,100],
        pageSize:10,
        rememberOrder: true,
-       search: true,   
+       search: true,
        columns: [
        {
            field: 'Gamesort',
            title: 'sortnumber',
-           visible: false 
+           visible: false
        },
        {
            field: 'Game',
@@ -4794,7 +4838,7 @@ function initTables()
            field: 'FixWhite',
            title: 'White'
            ,sortable: true
-       }, 
+       },
        {
          field: 'WhiteEv',
          title: 'Ev'
@@ -4853,6 +4897,84 @@ function initTables()
      ]
    });
 
+   $("#schedule").on("click-cell.bs.table", function (field, value, row, $el) {
+      if ($el.agame <= gamesDone)
+      {
+         openCross($el.agame);
+      }
+   });
+
+   $('#tf').bootstrapTable({
+       classes: 'table table-striped table-no-bordered',
+       striped: true,
+       smartDisplay: true,
+       sortable: true,
+       rememberOrder: true,
+       columns: [
+       {
+           field: 'startTime',
+           title: 'Start time'
+       },
+       {
+           field: 'endTime',
+           title: 'End time'
+       },
+       {
+           field: 'minMoves',
+           title: 'Min Moves'
+       },
+       {
+         field: 'maxMoves',
+         title: 'Max Moves'
+       },
+       {
+         field: 'avgMoves',
+         title: 'Avg Moves'
+       },
+       {
+         field: 'minTime',
+         title: 'Min Time'
+       },
+       {
+         field: 'maxTime',
+         title: 'Max Time'
+       },
+       {
+         field: 'avgTime',
+         title: 'Avg Time'
+       },
+       {
+         field: 'totalTime',
+         title: 'Tot Time'
+       },
+       {
+         field: 'winRateB',
+         title: 'Win Rate White'
+       },
+       {
+         field: 'winRateW',
+         title: 'Win Rate Black'
+       },
+       {
+         field: 'drawRate',
+         title: 'Draw Rate'
+       },
+       {
+         field: 'whiteWins',
+         title: 'White wins'
+       },
+       {
+         field: 'blackWins',
+         title: 'Black wins'
+       },
+       {
+         field: 'crashes',
+         title: 'Crashes'
+       }
+     ]
+   });
+
+
    $('#winner').bootstrapTable({
        classes: 'table table-striped table-no-bordered',
        pagination: true,
@@ -4863,7 +4985,7 @@ function initTables()
        pageList: [10,20,50,100],
        pageSize:10,
        rememberOrder: true,
-       search: true,   
+       search: true,
        columns: [
        {
            field: 'name',
@@ -4879,12 +5001,12 @@ function initTables()
            field: 'runner',
            title: 'Runner-up',
            sortable: true
-       }, 
+       },
        {
            field: 'score',
            title: 'Score',
            sortable: true
-       }, 
+       },
        {
          field: 'date',
          title: 'Date',
@@ -4959,8 +5081,8 @@ function hideBanner(timeDispl)
       timeDispl = 30000;
    }
 
-   setTimeout(function() 
-   { 
+   setTimeout(function()
+   {
       close = document.getElementById("close");
       note = document.getElementById("note");
       note.style.display = 'none';
@@ -5041,3 +5163,144 @@ function unlistenLog()
       socket.emit('noroom', 'livelog');
    }
 }
+
+function scheduleToTournamentInfo(schedJson)
+{
+   let start = null;
+   let end = null;
+   if (schedJson.length > 0)
+   {
+      let s = schedJson[0];
+      let l = schedJson[schedJson.length-1];
+      start = s.Start;
+      if (l.Start)
+      {
+         end = l.Start;
+      }
+   }
+
+   let data = {
+      startTime: getLocalDate(start),
+      endTime: 0,
+      minMoves: [9999999,-1],
+      maxMoves: [0,-1],
+      avgMoves: 0,
+      minTime:["99:59:59",-1],
+      maxTime:["00:00:00",-1],
+      avgTime: new Date(0),
+      totalTime: -1,
+      winRate:0,
+      drawRate:0,
+      whiteWins:0,
+      blackWins:0,
+      crashes:[0,[]]
+   }
+
+   let len = schedJson.length;
+   let avgTime = 0;
+   let compGames = 0;
+
+   for (let i = 0; i < len; i++)
+   {
+      let cur = schedJson[i];
+      cur.Game = i + 1;
+      if (typeof cur.Moves != 'undefined' && !crash_re.test(cur.Termination)) {
+         data.crashes[0] += 1;
+         data.crashes[1].push(cur.Game);
+      }
+      if (cur.Moves != null) {
+         compGames += 1;
+         if (cur.Moves < data.minMoves[0])  {
+            data.minMoves = [cur.Moves, cur.Game];
+         }
+         if (cur.Moves > data.maxMoves[0])  {
+            data.maxMoves = [cur.Moves, cur.Game];
+         }
+         data.avgMoves += cur.Moves;
+      }
+
+      if (cur.Duration != null) {
+         if (cur.Duration < data.minTime[0])  {
+            data.minTime = [cur.Duration, cur.Game];
+         }
+         if (cur.Duration > data.maxTime[0])  {
+            data.maxTime = [cur.Duration, cur.Game];
+         }
+
+         avgTime += hmsToSecondsOnly(cur.Duration);
+      }
+
+      if (cur.Result == "1-0") {
+         data.whiteWins+=1;
+      } else if (cur.Result == "0-1") {
+         data.blackWins+=1;
+      }
+   }
+   ;
+   data.avgMoves = Math.round(data.avgMoves/schedJson.length);
+
+   let draws = len - data.whiteWins - data.blackWins
+   data.drawRate = divide2Decimals(draws * 100,len) + "%";
+
+   data.winRateW = divide2Decimals(data.whiteWins *100,len) + "%";
+   data.winRateB = divide2Decimals(data.blackWins *100,len) + "%";
+   data.avgTime = hhmmss(avgTime/compGames);
+   data.totalTime = hhmmss((avgTime/compGames)*len);
+   data.endTime = getLocalDate(start, (avgTime/compGames)*(len/60));
+   return data;
+}
+
+function divide2Decimals(num,div)
+{
+   return Math.round((num +0.000001) / div * 100) / 100;
+}
+
+function hmsToSecondsOnly(str) {
+    var p = str.split(':'),
+        s = 0,
+        m = 1;
+
+    while (p.length > 0) {
+        s += m * parseInt(p.pop(), 10);
+        m *= 60;
+    }
+
+    return s;
+}
+
+function pad(num)
+{
+    return ("0"+num).slice(-2);
+}
+
+function hhmmss(secs)
+{
+  var minutes = Math.floor(secs / 60);
+  secs = secs%60;
+  var hours = Math.floor(minutes/60)
+  minutes = minutes%60;
+  var days = Math.floor(hours/24);
+  hours = hours%24;
+  if (days > 0)
+  {
+     return `${pad(days)}d, ${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
+  }
+  else
+  {
+     return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
+  }
+  // return pad(hours)+":"+pad(minutes)+":"+pad(secs); for old browsers
+}
+
+function getLocalDate(startDate, minutes)
+{
+   let momentDate = moment(startDate, 'HH:mm:ss on YYYY.MM.DD');
+   var timezoneDiff = moment().utcOffset() * 60 * 1000 - 3600 * 1000;
+   if (minutes != 'undefined')
+   {
+      momentDate.add(minutes * 60 * 1000);
+   }
+   momentDate.add(timezoneDiff);
+   return(momentDate.format('HH:mm:ss on YYYY.MM.DD'));                                                                                                                                               }
+
+
