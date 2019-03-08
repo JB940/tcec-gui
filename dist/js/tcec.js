@@ -3454,7 +3454,8 @@ function updateLiveEvalDataHistory(engineDatum, fen, container, contno)
    {
       score = datum.eval;
    }
-
+	console.log("PVBEF!!!!!");
+	console.log(datum.pv);
    if (datum.pv.search(/.*\.\.\..*/i) == 0)
    {
       if (!isNaN(score))
@@ -3529,6 +3530,7 @@ function updateLiveEvalDataHistory(engineDatum, fen, container, contno)
       parseScore = (engineDatum.eval * 1).toFixed(2);
     }
     
+   
     var evalStr = getPct(engineDatum.engine, parseScore);
     $(container).append('<h6>' + evalStr + ' PV(A) ' + '</h6><small>[D: ' + engineDatum.depth + ' | TB: ' + engineDatum.tbhits + ' | Sp: ' + engineDatum.speed + ' | N: ' + engineDatum.nodes +']</small>');
     var moveContainer = [];
@@ -3570,14 +3572,33 @@ function updateLiveEvalDataHistory(engineDatum, fen, container, contno)
   });
 
    // $('#live-eval').bootstrapTable('load', engineData);
-   // handle success
+ 
+ // handle success
 }
 
-var clearedAnnotation = 0;
+var regexBlackMove = /^[0-9]{1,3}\.\.\./;
+
+/**
+ ** Updates the Kibitzings' engine PV and arrow if enabled.
+ ** Called by the socket when new PV info comes in.
+ ** @param datum: Object {
+ **  depth:String,   -> 30/45
+ **  engine:String,  -> Stockfish 19020314
+ **  eval:String/Float,  -> "-M#36" or 5.15
+ **  nodes:String,  -> 147.4M
+ **  pv: String     -> 53... Qf8 54. Ra3 Rcc8 55. Ra1
+ **  speed:String,  -> 166Mn/s
+ **  tbhits:Integer -> 231
+ ** }
+ ** @param update: Boolean? has to do with updating
+ ** @param fen: String fen of current position
+ ** @param contno: Integer index of kibitzing engine
+ ** @param initial: Boolean? Unknown behavior
+ **/
 function updateLiveEvalData(datum, update, fen, contno, initial)
 {
    var container = '#live-eval-cont' + contno;
-
+	
    if (contno == 1 && !showLivEng1)
    {
       $(container).html(''); 
@@ -3605,11 +3626,9 @@ function updateLiveEvalData(datum, update, fen, contno, initial)
    {
       clearedAnnotation = 0;
    }
-   var engineData = [];
+   
    livePvs[contno] = [];
-   var livePvsC = livePvs[contno];
-   var score = 0;
-   var tbhits = datum.tbhits;
+   var livePvsC = [];
 
    if (update && !viewingActiveMove)
    {
@@ -3621,44 +3640,50 @@ function updateLiveEvalData(datum, update, fen, contno, initial)
       updateLiveEvalDataHistory(datum, fen, container, contno);
       return;
    }
-
-   if (!isNaN(datum.eval))
-   {
-      score = parseFloat(datum.eval);
-   }
-   else
+	
+   // Loose typing of JS makes silly things like this possible. not a number? returns "NaN"
+   score = parseFloat(datum.eval).toFixed(2);
+   if (score === "NaN")
    {
       score = datum.eval;
    }
-
-   if (datum.pv.search(/.*\.\.\..*/i) == 0)
-   {
-      if (!isNaN(score))
-      {
-         score = parseFloat(score) * -1;
-         if (score === 0)
-         {
-            score = 0;
-         }
+   score = "" + score;
+   //if isblackmove, invert sign.
+   if(regexBlackMove.test(datum.pv)) {
+	  if (score.charAt(0) == "-") {
+         score = "+" + score.substring(1);
+      } else {
+         score = "-" +score;
       }
-   }
+   } else if (score.charAt(0) != "-") {
+      score = "+" + score;
+   } 
+   
+   
+
+   datum.eval = score;
+   datum.tbhits = getTBHits(datum.tbhits);
+   datum.nodes = getNodes(datum.nodes);
 
    pvs = [];
 
    if (datum.pv.length > 0 && datum.pv.trim() != "no info")
    {
-    var chess = new Chess(activeFen);
+      var chess = new Chess(activeFen);
 
-    var currentFen = activeFen;
-
-    datum.pv = datum.pv.replace("...", ". .. ");
-    _.each(datum.pv.split(' '), function(move) {
-        if (isNaN(move.charAt(0)) && move != '..') {
-          moveResponse = chess.move(move);
-
+      var currentFen = activeFen;
+	
+	  var moveContainer = [];    
+	  var split = datum.pv.replace("...", ". .. ").split(' ');
+	  var length = split.length;
+      for (var i = 0, moveCount = 0; i < length; i++) {
+		var str = split[i]
+        if (isNaN(str.charAt(0)) && str != "..") {
+          moveResponse = chess.move(str);
           if (!moveResponse || typeof moveResponse == 'undefined') {
-               plog("undefine move" + move);
+               plog("undefine move" + str);
           } else {
+			 
             currentFen = chess.fen();
             newPv = {
               'from': moveResponse.from,
@@ -3666,79 +3691,29 @@ function updateLiveEvalData(datum, update, fen, contno, initial)
               'm': moveResponse.san,
               'fen': currentFen
             };
-
-            currentLastMove = move.slice(-2);
-
-            pvs = _.union(pvs, [newPv]);
-          }
-        }
-    });
-   }
-
-   if (pvs.length > 0) {
-    livePvsC = _.union(livePvsC, [pvs]);
-   }
-
-   if (score > 0) {
-    score = '+' + score;
-   }
-
-   datum.eval = score;
-   datum.tbhits = getTBHits(datum.tbhits);
-   datum.nodes = getNodes(datum.nodes);
-
-   if (datum.pv.length > 0 && datum.pv != "no info") {
-    engineData = _.union(engineData, [datum]);
-   }
-
-  $(container).html('');
-
-  _.each(engineData, function(engineDatum) {
-    if (engineDatum.engine == '')
-    {
-       engineDatum.engine = datum.engine;
-    }
-    
-    parseScore = 0.00;
-    if (isNaN(engineDatum.eval)) {
-      parseScore = engineDatum.eval;
-    } else {
-      parseScore = (engineDatum.eval * 1).toFixed(2);
-    }
-   
-    var evalStr = getPct(engineDatum.engine, parseScore);
-    
-    $(container).append('<h6>' + evalStr + ' PV(A) ' + '</h6><small>[D: ' + engineDatum.depth + ' | TB: ' + engineDatum.tbhits + ' | Sp: ' + engineDatum.speed + ' | N: ' + engineDatum.nodes +']</small>');
-    var moveContainer = [];
-    if (livePvsC.length > 0) {
-      _.each(livePvsC, function(livePv, pvKey) {
-        var moveCount = 0;
-        _.each(engineDatum.pv.split(' '), function(move) {
-          if (isNaN(move.charAt(0)) && move != '..') {
-            pvLocation = livePvsC[pvKey][moveCount];
-            if (pvLocation) {
-               moveContainer = _.union(moveContainer, ["<a href='#' class='set-pv-board' live-pv-key='" + pvKey +
-                                                       "' move-key='" + moveCount +
+			
+			//we can build the html and the PV in the same loop. no need to do it three times
+			moveContainer.push("<a href='#' class='set-pv-board' live-pv-key='0' move-key='" + moveCount +
                                                        "' engine='" + (contno) +
-                                                       "' color='live'>" + pvLocation.m +
-                                                       '</a>']);
-               }
-            else
-            {
-               plog ("pvlocation not defined");
-            }
-            moveCount++;
-          } else {
-            moveContainer = _.union(moveContainer, [move]);
+                                                       "' color='live'>" + moveResponse.san +
+                                                       '</a>');
+            currentLastMove = str.slice(-2);
+            //pushing is the same as a union of an array with one item...
+            pvs.push(newPv);
+			moveCount++;
           }
-        });
+        } else {
+            moveContainer.push(str);
+		}
+     }
+   }
+   
+   $(container).html('');
+  
+   var evalStr = getPct(datum.engine, datum.eval); 
+   $(container).append('<h6>' + evalStr + ' PV(A) ' + '</h6><small>[D: ' + datum.depth + ' | TB: ' + datum.tbhits + ' | Sp: ' + datum.speed + ' | N: ' + datum.nodes +']</small>');      
         
         if (boardArrows) {
-          if (pvKey == 0) {
-            color = 'blue';
-          } else {
-            color = 'orange';
-          }
           if (contno == 2)
           {
              color = 'reds';
@@ -3747,13 +3722,14 @@ function updateLiveEvalData(datum, update, fen, contno, initial)
           {
              color = 'blues';
           }
-          board.addArrowAnnotation(livePv[0].from, livePv[0].to, color, board.orientation());
+			console.log("LOG MOVE");
+			console.log(pvs);
+			console.log(datum.pv);
+          board.addArrowAnnotation(pvs[0].from, pvs[0].to, color, board.orientation());
         }
-      });
-    }
+    
     $(container).append('<div class="engine-pv engine-pv-live alert alert-dark">' + moveContainer.join(' ') + '</div>');
-    livePvs[contno] = livePvsC[0];
-  });
+    livePvs[contno] = pvs;
 
 
    // $('#live-eval').bootstrapTable('load', engineData);
