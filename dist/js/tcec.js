@@ -2128,7 +2128,7 @@ function getRating(engine, engName)
    }
 
    _.each(engGlobData.ratings, function(engine, key) {
-      if (getShortEngineName(engNameL) == getShortEngineName(engine.name))
+      if (engNameL == engine.name)
       {
          elo = engine.elo;
          return true;
