@@ -15,6 +15,7 @@ const pid = process.pid;
 const exec = require('child_process').exec;
 const argv = require('yargs').argv;
 let bonus = 0;
+var deepEqual = require('deep-equal');
 
 if (argv.port == undefined)
 {
@@ -347,25 +348,17 @@ function broadCastUsers()
 
 function broadCastData(socket, message, file, currData, prevData)
 {
-   var a = JSON.stringify(currData);
-   var b = JSON.stringify(prevData);
-
-   if (a == b)
+   if (deepEqual(currData, prevData))
    {
-      //console.log ("File "+ file + " did not change:");
       return;
    }
    io.local.emit(message, currData);
 }
 
-function checkSend(currData, prevData)
+function isJsonDiff(currData, prevData)
 {
-   var a = JSON.stringify(currData);
-   var b = JSON.stringify(prevData);
-
-   if (a == b)
+   if (deepEqual(currData, prevData))
    {
-      //console.log ("File "+ file + " did not change:");
       return 0;
    }
    else
@@ -379,11 +372,11 @@ var numMovesToSend = 4;
 
 function getDeltaPgn(pgnX)
 {
-   var pgn = {};
    var countPgn = 0;
+   var maxKey = pgnX.Moves.length;
    pgnX.Users = userCount();
 
-   if (prevData && JSON.stringify(prevData.Headers) != JSON.stringify(pgnX.Headers))
+   if (prevData && isJsonDiff(prevData.Headers, pgnX.Headers))
    {
       pgnX.gameChanged = 1;
       return pgnX;
@@ -392,9 +385,15 @@ function getDeltaPgn(pgnX)
    
    if (pgnX && pgnX.Moves && (pgnX.Moves.length - numMovesToSend) > 0) {
       pgnX.Moves.splice(0, pgnX.Moves.length - numMovesToSend);
+      pgnX.lastMoveLoaded = maxKey - numMovesToSend;
    }
-   console.log ("Setting pgn.lastMoveLoaded to " + (pgnX.Moves[pgnX.Moves.length].key + 1));
-   return pgn;
+   else {
+      pgnX.lastMoveLoaded = maxKey;
+   }
+   pgnX.totalSent = numMovesToSend > maxKey ? maxKey : numMovesToSend;
+
+   console.log ("Setting pgn.lastMoveLoaded to " + pgnX.lastMoveLoaded  + " ,total keys:" + maxKey + " ,totalSent:" + pgnX.totalSent);
+   return pgnX;
 }
 
 var liveChartInterval = setInterval(function() { sendlines(); }, 3000);
@@ -496,7 +495,7 @@ watcherFast.on('change', (path, stats) =>
       if (path.match(/live.json/))
       {
          //console.log ("json changed");
-         var changed = checkSend(data, prevData);
+         var changed = isJsonDiff(data, prevData);
          if (changed)
          {
             delta = getDeltaPgn(data, prevData);

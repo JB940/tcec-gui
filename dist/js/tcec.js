@@ -443,15 +443,9 @@ function setPgn(pgn)
 
    if (prevPgnData)
    {
-      _.each(pgn.Moves, function(move, key) {
-         if (typeof move.Moveno != 'undefined' && parseInt(move.Moveno) > 0)
-         {
-            if (!prevPgnData.Moves[key])
-            {
-               prevPgnData.Moves.push(pgn.Moves[key]);
-            }
-         }
-      });
+      for (let i = 0 ; i < pgn.totalSent ; i++) {
+         prevPgnData.Moves[i + pgn.lastMoveLoaded] = pgn.Moves [i];
+      }
       prevPgnData.BlackEngineOptions = pgn.BlackEngineOptions;
       prevPgnData.WhiteEngineOptions = pgn.WhiteEngineOptions;
       prevPgnData.Headers = pgn.Headers;
@@ -3636,6 +3630,7 @@ function updateLiveEvalDataHistory(engineDatum, fen, container, contno)
    });
    activePvH[contno] = livePvs[contno];
 }
+
 
 var regexBlackMove = /^[0-9]{1,3}\.\.\./;
 var clearedAnnotation = 0;
