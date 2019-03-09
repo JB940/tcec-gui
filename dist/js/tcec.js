@@ -3454,50 +3454,6 @@ function setEngineColor(color)
    updateChartData();
 }
 
-function updateLiveEvalInit()
-{
-   $('#live-eval').bootstrapTable({
-      classes: 'table table-striped table-no-bordered',
-      columns: [
-      {
-         field: 'engine',
-         title: 'Eng',
-         width: '30'
-      },
-      {
-         field: 'eval',
-         title: 'Eval',
-         width: '20'
-      },
-      {
-         field: 'pv',
-         title: 'PV',
-         width: '290'
-      },
-      {
-         field: 'depth',
-         title: 'Depth',
-         width: '20'
-      },
-      {
-         field: 'speed',
-         title: 'Speed',
-         width: '20'
-      },
-      {
-         field: 'nodes',
-         title: 'Nodes',
-         width: '20'
-      },
-      {
-         field: 'tbhits',
-         title: 'TB',
-         width: '20'
-      }
-      ]
-   });
-}
-
 function updateLiveEvalDataHistory(engineDatum, fen, container, contno)
 {
    var engineData = [];
