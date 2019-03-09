@@ -66,6 +66,7 @@ var whitePv = [];
 var blackPv = [];
 var livePvs = [];
 var activePv = [];
+var activePvH = [];
 var highlightpv = 0;
 var showLivEng1 = 1;
 var showLivEng2 = 1;
@@ -1565,6 +1566,7 @@ $(document).on('click', '.set-pv-board', function(e) {
    selectedId = $(this).closest('div').attr('id')
    moveKey = $(this).attr('move-key') * 1;
    pvColor = $(this).attr('color');
+   hist = $(this).attr('hist');
    if (pvColor == 'live')
    {
       $('#v-pills-pv-analys-tab').click();
@@ -1589,8 +1591,17 @@ $(document).on('click', '.set-pv-board', function(e) {
     liveKey = $(this).attr('engine');
     plog ("liveKey is :" + liveKey);
     activePv = livePvs[liveKey];
-    setPvFromKey(moveKey, pvColor, activePv);
-    // pvBoard.orientation('white');
+    if (hist)
+    {
+       if (activePvH && activePvH[liveKey] && (activePvH[liveKey].length > 0))
+       {
+          setPvFromKey(moveKey, pvColor, activePvH[liveKey]);
+       }
+    }
+    else
+    {
+       setPvFromKey(moveKey, pvColor, activePv);
+    }
   }
 
   e.preventDefault();
@@ -3596,6 +3607,7 @@ function updateLiveEvalDataHistory(engineDatum, fen, container, contno)
                moveContainer = _.union(moveContainer, ["<a href='#' class='set-pv-board' live-pv-key='" + pvKey +
                                                        "' move-key='" + moveCount +
                                                        "' engine='" + (contno) +
+                                                       "' hist='" + 1 +
                                                        "' color='live'>" + pvLocation.m +
                                                        '</a>']);
                }
@@ -3622,6 +3634,7 @@ function updateLiveEvalDataHistory(engineDatum, fen, container, contno)
     $(container).append('<div class="engine-pv engine-pv-live alert alert-dark">' + moveContainer.join(' ') + '</div>');
     livePvs[contno] = livePvsC[0];
   });
+  activePvH[contno] = livePvs[contno]; 
 
    // $('#live-eval').bootstrapTable('load', engineData);
  
