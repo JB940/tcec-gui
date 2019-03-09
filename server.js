@@ -495,15 +495,9 @@ watcherFast.on('change', (path, stats) =>
       if (path.match(/live.json/))
       {
          //console.log ("json changed");
-         var changed = isJsonDiff(data, prevData);
-         if (changed)
-         {
-            delta = getDeltaPgn(data, prevData);
-            //broadCastData(socket, 'pgn', path, delta, delta);
-            io.local.emit('pgn', delta);
-            //console.log ("Sent pgn data:" + JSON.stringify(delta).length + ",orig" + JSON.stringify(data).length + ",changed" + delta.Users);
-            lastPgnTime = Date.now();
-         }
+         delta = getDeltaPgn(data, prevData);
+         io.local.emit('pgn', delta);
+         lastPgnTime = Date.now();
          prevData = data;
       }
    }
