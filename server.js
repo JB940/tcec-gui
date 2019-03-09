@@ -389,47 +389,16 @@ function getDeltaPgn(pgnX)
       return pgnX;
    }
    pgnX.gameChanged = 0;
-
-   //console.log ("Found prev data");
-
-   var keys = _.keys(pgnX);
-   _.each(keys, function(index, key) {
-      if (index != "Moves")
-      {
-         pgn[index] = pgnX[index];
-      }
-      else
-      {
-         //console.log ("Noy copying moves");
-      }
-   });
-
-   var maxKey = 0;
-   pgn.Moves = [];
-   _.eachRight(pgnX.Moves, function(move, key) {
-      pgn.Moves[key] = {};
-      if (countPgn <= numMovesToSend)
-      {
-         pgn.Moves[key]= pgnX.Moves[key];
-         pgn.Moves[key].Moveno = key + 1;
-         pgn.lastMoveLoaded = key;
-         if (maxKey == 0)
-         {
-            maxKey = key + 1;
-         }
-      }
-      else
-      {
-         pgn.Moves[key].Moveno = 0;
-      }
-      countPgn = countPgn + 1;
-   });
-   console.log ("Setting pgn.lastMoveLoaded to " + maxKey);
-
+   
+   if (pgnX && pgnX.Moves && (pgnX.Moves.length - numMovesToSend) > 0) {
+      pgnX.Moves.splice(0, pgnX.Moves.length - numMovesToSend);
+   }
+   console.log ("Setting pgn.lastMoveLoaded to " + (pgnX.Moves[pgnX.Moves.length].key + 1));
    return pgn;
 }
 
 var liveChartInterval = setInterval(function() { sendlines(); }, 3000);
+
 function sendArrayRoom(array, room, count)
 {
    var localArray = array;
