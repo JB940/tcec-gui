@@ -3454,6 +3454,8 @@ function setEngineColor(color)
    updateChartData();
 }
 
+
+
 function updateLiveEvalDataHistory(datum, fen, container, contno){
   
    let score = parseFloat(datum.eval).toFixed(2);
@@ -3481,7 +3483,7 @@ function updateLiveEvalDataHistory(datum, fen, container, contno){
       var chess = new Chess(fen);
       var currentFen = fen;
 
-      var split = datum.pv.split(' ');
+      var split = datum.replace("...","... ").pv.split(' ');
       var length = split.length;
       for (var i = 0, moveCount = 0; i < length; i++) {
          var str = split[i];
@@ -3607,7 +3609,7 @@ function updateLiveEvalData(datum, update, fen, contno, initial) {
       var chess = new Chess(fen);
       var currentFen = fen;
 
-      var split = datum.pv.split(' ');
+      var split = datum.replace("...","... ").pv.split(' ');
       var length = split.length;
       for (var i = 0, moveCount = 0; i < length; i++) {
          var str = split[i];
