@@ -3455,7 +3455,7 @@ function setEngineColor(color)
 }
 
 function updateLiveEvalDataHistory(datum, fen, container, contno){
-   livePvs[contno] = [];
+  
    let score = parseFloat(datum.eval).toFixed(2);
    if (score === "NaN") {
       score = datum.eval;
@@ -3489,6 +3489,7 @@ function updateLiveEvalDataHistory(datum, fen, container, contno){
             moveResponse = chess.move(str);
             if (!moveResponse || typeof moveResponse == 'undefined') {
                plog("undefine move" + str);
+               return;
             } else {
 
                currentFen = chess.fen();
@@ -3513,8 +3514,10 @@ function updateLiveEvalDataHistory(datum, fen, container, contno){
             moveContainer.push(str);
          }
       }
+   }else {
+      return;
    }
-
+   livePvs[contno] = [];
    $(container).html('');
    board.clearAnnotation();
 
@@ -3637,6 +3640,8 @@ function updateLiveEvalData(datum, update, fen, contno, initial) {
             moveContainer.push(str);
          }
       }
+   } else {
+      return;
    }
    
 
