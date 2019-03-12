@@ -2219,7 +2219,7 @@ function sleep(ms)
    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-var crash_re = /^(?:TCEC|Syzygy|TB pos|in progress|(?:White|Black) mates|Stale|Insuff|Fifty|3-[fF]old)/; // All possible valid terminations (hopefully).
+var crash_re = /^(?:TCEC|Syzygy|resigns|TB pos|in progress|(?:White|Black) mates|Stale|Insuff|Fifty|3-[fF]old)/; // All possible valid terminations (hopefully).
 
 function getEngRecSched(data, engineName)
 {
