@@ -610,7 +610,7 @@ function updateChartData()
 
    var plyNum = 0;
 
-	_.each(loadedPgn.Moves, function(move, key) {
+	_.each(prevPgnData.Moves, function(move, key) {
 		if (!move.book) {
 			moveNumber = Math.round(key / 2) + 1;
 

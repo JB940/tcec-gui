@@ -50,11 +50,6 @@
             <a class="nav-link py-0" href="#/" data-toggle="modal" data-target="#rules-modal">Rules</a>
           </li>
           <li class="nav-item">
-             <a class="nav-link py-0" href="https://tcec.chessdom.com/articles/TCEC_Openings_FAQ.html" target="_blank">
-                 Book FAQ
-             </a>
-          </li>
-          <li class="nav-item">
              <a class="nav-link py-0" href="https://cd.tcecbeta.club/archive.html" target="_blank">
                  Archive
              </a>
@@ -68,7 +63,7 @@
                <a class="dropdown-item" href="https://tcecbeta.club/live.html" target="_blank">
                  Betadev
                </a>
-               <a class="dropdown-item" href="https://tcecbonus.club/" target="_blank">
+               <a class="dropdown-item" href="https://tcecbonus.club/bonus.html" target="_blank">
                  Bonus
                </a>
                <a class="dropdown-item" href="http://legacy-tcec.chessdom.com/live.php" target="_blank">
@@ -87,8 +82,8 @@
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle py-0" href="/" id="dd-download" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Download</a>
             <div class="dropdown-menu" aria-labelledby="dd-download">
-              <a class="dropdown-item" href="http://legacy-tcec.chessdom.com/archive/crosstable.json" target="_blank">Crosstable</a>
-              <a class="dropdown-item" href="http://legacy-tcec.chessdom.com/archive/schedule.json" target="_blank">Schedule</a>
+              <a class="dropdown-item" href="http://tcec.chessdom.com/crosstable.json" target="_blank">Crosstable</a>
+              <a class="dropdown-item" href="http://tcec.chessdom.com/schedule.json" target="_blank">Schedule</a>
               <a class="dropdown-item" href="https://tcec.chessdom.com/evalbotelo/archive.pgn" target="_blank">Event PGN</a>
               <a class="dropdown-item" href="https://tcec.chessdom.com/evalbotelo/live.pgn" target="_blank">Current PGN</a>
             </div>
@@ -526,29 +521,37 @@
               </ul>
             </li>
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle py-0" href="http://tcecbeta.com" id="dd-download" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">TCEC Articles</a>
-              <div class="dropdown-menu" aria-labelledby="dd-download">
-                 <a class="dropdown-item" href="https://tcec.chessdom.com/articles/TCEC_13_for_TCEC.pdf" target="_blank">
-                   TCEC_13_for_TCEC.pdf
-                 </a>
-                 <a class="dropdown-item" href="https://tcec.chessdom.com/articles/TCEC_12_for_TCEC.pdf" target="_blank">
-                   TCEC_12_for_TCEC.pdf
-                 </a>
-                 <a class="dropdown-item" href="https://tcec.chessdom.com/articles/TCEC_11_for_TCEC.pdf" target="_blank">
-                   TCEC_11_for_TCEC.pdf
-                 </a>
-                 <a class="dropdown-item" href="https://tcec.chessdom.com/articles/TCEC_10_for_TCEC.pdf" target="_blank">
-                   TCEC_10_for_TCEC.pdf
-                 </a>
-                 <a class="dropdown-item" href="https://tcec.chessdom.com/articles/TCEC_Cup_1_for_TCEC.pdf" target="_blank">
-                   TCEC_Cup_1_for_TCEC.pdf
-                 </a>
-                 <a class="dropdown-item" href="https://tcec.chessdom.com/articles/TCEC_Cup_2_for_TCEC.pdf" target="_blank">
-                   TCEC_Cup_2_for_TCEC.pdf
-                 </a>
-              </div>
-              </div>
-            </li>
+            <a class="nav-link dropdown-toggle py-0" href="http://tcecbeta.com" id="dd-download" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">TCEC Links</a>
+               <ul class="dropdown-menu bg-dark whitefont">
+                  <li><a class="dropdown-item dropdown-toggle whitefont" href="#/">Articles</a>
+                    <div class="dropdown-menu" aria-labelledby="dd-download">
+                       <a class="dropdown-item" href="https://tcec.chessdom.com/articles/TCEC_14_for_TCEC.pdf" target="_blank">
+                         TCEC_14_for_TCEC.pdf
+                       </a>
+                       <a class="dropdown-item" href="https://tcec.chessdom.com/articles/TCEC_13_for_TCEC.pdf" target="_blank">
+                         TCEC_13_for_TCEC.pdf
+                       </a>
+                       <a class="dropdown-item" href="https://tcec.chessdom.com/articles/TCEC_12_for_TCEC.pdf" target="_blank">
+                         TCEC_12_for_TCEC.pdf
+                       </a>
+                       <a class="dropdown-item" href="https://tcec.chessdom.com/articles/TCEC_11_for_TCEC.pdf" target="_blank">
+                         TCEC_11_for_TCEC.pdf
+                       </a>
+                       <a class="dropdown-item" href="https://tcec.chessdom.com/articles/TCEC_10_for_TCEC.pdf" target="_blank">
+                         TCEC_10_for_TCEC.pdf
+                       </a>
+                       <a class="dropdown-item" href="https://tcec.chessdom.com/articles/TCEC_Cup_1_for_TCEC.pdf" target="_blank">
+                         TCEC_Cup_1_for_TCEC.pdf
+                       </a>
+                       <a class="dropdown-item" href="https://tcec.chessdom.com/articles/TCEC_Cup_2_for_TCEC.pdf" target="_blank">
+                         TCEC_Cup_2_for_TCEC.pdf
+                       </a>
+                    </div>
+                  </li>
+                  <a class="dropdown-item whitefont" href="https://tcec.chessdom.com/articles/TCEC_Openings_FAQ.html" target="_blank">
+                    Book FAQ
+                  </a>
+               </ul>
           </ul>
         </div>
       </nav>
@@ -1661,8 +1664,7 @@ To play the games a special version of cutechess-cli is used. This is a command 
          });
 
       socket.on('crosstable', function(data){
-         updateCrosstableData(data);
-         updateStandtableData(data);
+         updateCrosstableDataMain(data);
          });
       socket.on('liveeval', function(data){
          updateLiveEvalData(data, 1, null, 1);
@@ -1692,6 +1694,12 @@ To play the games a special version of cutechess-cli is used. This is a command 
         });
       socket.on('banner', function(data){
         showBanner(data);
+        });
+      socket.on('tournament', function(data){
+        setTwitchChange(data); 
+        });
+      socket.on('enginerating', function(data){
+        updateEngRatingData(data); 
         });
 
     </script>
