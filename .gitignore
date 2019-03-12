@@ -8,3 +8,5 @@ schedule.json
 liveeval.json
 eng_debug.txt
 package-lock.json
+.tern-project
+bundle
