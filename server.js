@@ -15,6 +15,7 @@ const pid = process.pid;
 const exec = require('child_process').exec;
 const argv = require('yargs').argv;
 let bonus = 0;
+var deepEqual = require('deep-equal');
 
 if (argv.port == undefined)
 {
@@ -144,6 +145,9 @@ var watcherSlow = chokidar.watch(ctable, {
    });
 watcherSlow.add('schedule.json');
 watcherSlow.add('banner.txt');
+watcherSlow.add('gamelist.json');
+watcherSlow.add('tournament.json');
+watcherSlow.add('enginerating.json');
 
 var count = 0;
 var socket = 0;
@@ -199,6 +203,7 @@ function getPGN(id, menuData)
    var found = 0;
    var retPgn = {};
    var data = menuData;
+   retPgn.found = 0;
 
    _.each(data.Seasons, function(value, key) {
       if (found)
@@ -214,7 +219,8 @@ function getPGN(id, menuData)
             retPgn.scjson  = subvalue.abb + "_Schedule.json";
             retPgn.download = value.download;
             retPgn.url = subvalue.url;
-            found = 0;
+            found = 1;
+            retPgn.found = 1;
             return false;
          }
       });
@@ -261,11 +267,26 @@ function checkLatestArchive()
    return (pgnFile);
 }
 
-if (!bonus && checkLatestArchive())
+function addLatestArch()
 {
-   console.log ("Adding pgnfile:" + pgnFile);
-   watcherSlow.add(pgnFile);
+   if (!bonus)
+   {
+      watcherSlow.unwatch(pgnFile);
+      var retPgn = checkLatestArchive();
+      if (retPgn)
+      {
+         console.log ("Adding pgnfile:" + pgnFile);
+         watcherSlow.add(pgnFile);
+      }
+      else
+      {
+         console.log ("No current file to monitor");
+      }
+   }
 }
+
+addLatestArch ();
+runPerlArchive();
 
 io.sockets.on ('connection', function(socket)
 {
@@ -347,25 +368,17 @@ function broadCastUsers()
 
 function broadCastData(socket, message, file, currData, prevData)
 {
-   var a = JSON.stringify(currData);
-   var b = JSON.stringify(prevData);
-
-   if (a == b)
+   if (deepEqual(currData, prevData))
    {
-      //console.log ("File "+ file + " did not change:");
       return;
    }
    io.local.emit(message, currData);
 }
 
-function checkSend(currData, prevData)
+function isJsonDiff(currData, prevData)
 {
-   var a = JSON.stringify(currData);
-   var b = JSON.stringify(prevData);
-
-   if (a == b)
+   if (deepEqual(currData, prevData))
    {
-      //console.log ("File "+ file + " did not change:");
       return 0;
    }
    else
@@ -379,57 +392,33 @@ var numMovesToSend = 4;
 
 function getDeltaPgn(pgnX)
 {
-   var pgn = {};
    var countPgn = 0;
+   var maxKey = pgnX.Moves.length;
    pgnX.Users = userCount();
+   pgnX.Round = pgnX.Headers.Round * 100;
 
-   if (prevData && JSON.stringify(prevData.Headers) != JSON.stringify(pgnX.Headers))
+   if (prevData && isJsonDiff(prevData.Headers, pgnX.Headers))
    {
       pgnX.gameChanged = 1;
       return pgnX;
    }
    pgnX.gameChanged = 0;
+   
+   if (pgnX && pgnX.Moves && (pgnX.Moves.length - numMovesToSend) > 0) {
+      pgnX.Moves.splice(0, pgnX.Moves.length - numMovesToSend);
+      pgnX.lastMoveLoaded = maxKey - numMovesToSend;
+   }
+   else {
+      pgnX.lastMoveLoaded = maxKey;
+   }
+   pgnX.totalSent = numMovesToSend > maxKey ? maxKey : numMovesToSend;
 
-   //console.log ("Found prev data");
-
-   var keys = _.keys(pgnX);
-   _.each(keys, function(index, key) {
-      if (index != "Moves")
-      {
-         pgn[index] = pgnX[index];
-      }
-      else
-      {
-         //console.log ("Noy copying moves");
-      }
-   });
-
-   var maxKey = 0;
-   pgn.Moves = [];
-   _.eachRight(pgnX.Moves, function(move, key) {
-      pgn.Moves[key] = {};
-      if (countPgn <= numMovesToSend)
-      {
-         pgn.Moves[key]= pgnX.Moves[key];
-         pgn.Moves[key].Moveno = key + 1;
-         pgn.lastMoveLoaded = key;
-         if (maxKey == 0)
-         {
-            maxKey = key + 1;
-         }
-      }
-      else
-      {
-         pgn.Moves[key].Moveno = 0;
-      }
-      countPgn = countPgn + 1;
-   });
-   console.log ("Setting pgn.lastMoveLoaded to " + maxKey);
-
-   return pgn;
+   console.log ("Setting pgn.lastMoveLoaded to " + pgnX.lastMoveLoaded  + " ,total keys:" + maxKey + " ,totalSent:" + pgnX.totalSent);
+   return pgnX;
 }
 
 var liveChartInterval = setInterval(function() { sendlines(); }, 3000);
+
 function sendArrayRoom(array, room, count)
 {
    var localArray = array;
@@ -527,15 +516,9 @@ watcherFast.on('change', (path, stats) =>
       if (path.match(/live.json/))
       {
          //console.log ("json changed");
-         var changed = checkSend(data, prevData);
-         if (changed)
-         {
-            delta = getDeltaPgn(data, prevData);
-            //broadCastData(socket, 'pgn', path, delta, delta);
-            io.local.emit('pgn', delta);
-            //console.log ("Sent pgn data:" + JSON.stringify(delta).length + ",orig" + JSON.stringify(data).length + ",changed" + delta.Users);
-            lastPgnTime = Date.now();
-         }
+         delta = getDeltaPgn(data, prevData);
+         io.local.emit('pgn', delta);
+         lastPgnTime = Date.now();
          prevData = data;
       }
    }
@@ -561,31 +544,41 @@ watcherFast
                         })
   .on('error', error => console.log(`Watcher error: ${error}`));
 
+function runPerlArchive()
+{
+   console.log ("Need to do something about pgnfile");
+   if (inprogress == 0)
+   {
+      inprogress = 1;
+      var perlrun = "perl " + singlePerl + " --ful " + fullzip + " --tag " + tag + ' --loc ' + json + tag;
+      console.log ("Need to run :" + perlrun);
+      exec(perlrun, function(err, stdout, stderr) {
+         console.log ("Doing it:" + stdout + stderr);
+         setTimeout(function() {
+            io.emit('refreshsched', {'count': 1});
+         }, 15000);
+         inprogress = 0;
+      });
+   }
+   else
+   {
+      console.log ("Already another in progress");
+   }
+}
+
 watcherSlow.on('change', (path, stats) => 
 {
    console.log ("slow path changed:" + path);
    if (!bonus && (path == pgnFile))
    {
-      console.log ("Need to do something about pgnfile");
-      if (inprogress == 0)
-      {
-         inprogress = 1;
-         var perlrun = "perl " + singlePerl + " --ful " + fullzip + " --tag " + tag + ' --loc ' + json + tag;
-         console.log ("Need to run :" + perlrun);
-         exec(perlrun, function(err, stdout, stderr) {
-            console.log ("Doing it:" + stdout + stderr);
-            setTimeout(function() {
-               io.emit('refreshsched', {'count': 1});
-            }, 15000);
-            inprogress = 0;
-         });
-      }
-      else
-      {
-         console.log ("Already another in progress");
-      }
+      runPerlArchive();
    }
-   else
+   if (!bonus && path.match(/gamelist/))
+   {
+      addLatestArch();
+      runPerlArchive();
+   }
+   if ((path != pgnFile) && (!path.match(/gamelist/)))
    {
       var content = fs.readFileSync(path, "utf8");
       try
@@ -593,13 +586,24 @@ watcherSlow.on('change', (path, stats) =>
          var data = JSON.parse(content);
          if (path.match(/crosstable/))
          {
-            broadCastData(socket, 'crosstable', path, data, prevCrossData);
-            prevCrossData = data;
+            console.log ("Sendnig crosstable data:");
+            io.local.emit('crosstable', data);
          }
          if (path.match(/schedule/))
          {
             broadCastData(socket, 'schedule', path, data, prevSchedData);
             prevSchedData = data;
+         }
+         if (path.match(/tournament/))
+         {
+            io.local.emit('tournament', data);
+         }
+         if (path.match(/enginerating/))
+         {
+            io.local.emit('enginerating', data);
+            exec("cp /var/www/json/shared/enginerating.json /var/www/json/archive/" + tag + "_Enginerating.egjson", function(err, stdout, stderr) {
+               console.log ("Doing it:" + stdout + stderr);
+            });
          }
          if (path.match(/banner/))
          {

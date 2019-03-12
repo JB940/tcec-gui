@@ -9,7 +9,6 @@ pvBoardElac = $('#pv-boardac');
 var squareToHighlight = '';
 var pvSquareToHighlight = '';
 var crossTableInitialized = false;
-var standTableInitialized = false;
 var gameActive = false;
 
 var squareClass = 'square-55d63';
@@ -29,8 +28,6 @@ var defaultStartTime = 0;
 var viewingActiveMove = true;
 var loadedPlies = 0;
 var activePly = 0;
-
-var loadedPgn = '';
 
 var activeFen = '';
 var lastMove = '';
@@ -54,12 +51,8 @@ var liveEngineEval2 = [];
 var debug = 0;
 var whiteEngineFull = null;
 var blackEngineFull = null;
-var prevwhiteEngineFull = null;
-var prevblackEngineFull = null
-var prevwhiteEngineFullSc = null;
-var prevblackEngineFullSc = null
 var h2hRetryCount = 0;
-var scrRetryCount = 0;
+var h2hScoreRetryCount = 0;
 
 var livePVHist = [];
 var whitePv = [];
@@ -78,8 +71,8 @@ var highlightClassPv = 'highlight-white highlight-none';
 var boardNotation = true;
 var boardNotationPv = true;
 var boardArrows = true;
-var tcecElo = 1;
-var engGlobData = 0;
+var tcecElo = 0;
+var engineRatingGlobalData = 0;
 var tourInfo = {};
 var btheme = "chess24";
 var ptheme = "chess24";
@@ -107,14 +100,16 @@ var lastRefreshTime = 0;
 var userCount = 0;
 var globalRoom = 0;
 
+var standColumns = [];
+
 var onMoveEnd = function() {
-  boardEl.find('.square-' + squareToHighlight)
-    .addClass(highlightClass);
+   boardEl.find('.square-' + squareToHighlight)
+   .addClass(highlightClass);
 };
 
 var onMoveEndPv = function() {
-  pvBoardElb.find('.square-' + pvSquareToHighlight)
-    .addClass(highlightClassPv);
+   pvBoardElb.find('.square-' + pvSquareToHighlight)
+   .addClass(highlightClassPv);
 }
 
 function getUserS()
@@ -137,12 +132,13 @@ function updateRefresh()
          $('#board-to-sync').removeClass('disabled');
          $('#board-to-sync').find('i').addClass('fa-retweet');
          lastRefreshTime = 0;
-         }, reSyncInterval * 1000);
+      }, reSyncInterval * 1000);
    }
 }
 
 function updateAll()
 {
+   eventNameHeader = 0;
    updatePgn(1);
    setTimeout(function() { updateTables(); }, 5000);
 }
@@ -162,8 +158,6 @@ function plog(message, debugl)
 
 function updatePgnDataMain(data)
 {
-   loadedPgn = data;
-
    if (!prevPgnData)
    {
       updateEngineInfo('#whiteenginetable', '#white-engine-info', data.WhiteEngineOptions);
@@ -191,6 +185,7 @@ function updatePgnData(data, read)
 
 function updatePgn(resettime)
 {
+   eventNameHeader = 0;
    axios.get('live.json?no-cache' + (new Date()).getTime())
    .then(function (response)
    {
@@ -202,151 +197,152 @@ function updatePgn(resettime)
          timeDiff = currTime.getTime() - lastMod.getTime();
       }
       prevPgnData = 0;
+      response.data.gameChanged = 1;
       updatePgnDataMain(response.data);
    })
    .catch(function (error) {
-     // handle error
+      // handle error
    });
 }
 
 function startClock(color, currentMove, previousMove) {
-  stopClock('black');
-  stopClock('white');
+   stopClock('black');
+   stopClock('white');
 
-  previousTime = previousMove.tl;
-  currentTime = currentMove.tl;
+   previousTime = previousMove.tl;
+   currentTime = currentMove.tl;
 
-  if (color == 'white') {
-    whiteTimeRemaining = Math.ceil(previousTime / 1000) * 1000 + 1000;
-    blackTimeRemaining = Math.ceil(currentTime / 1000) * 1000;
+   if (color == 'white') {
+      whiteTimeRemaining = Math.ceil(previousTime / 1000) * 1000 + 1000;
+      blackTimeRemaining = Math.ceil(currentTime / 1000) * 1000;
 
-    if (isNaN(blackTimeRemaining))
-    {
-       blackTimeRemaining = defaultStartTime;
-    }
+      if (isNaN(blackTimeRemaining))
+      {
+         blackTimeRemaining = defaultStartTime;
+      }
 
-    if (isNaN(whiteTimeRemaining))
-    {
-       whiteTimeRemaining = defaultStartTime;
-    }
+      if (isNaN(whiteTimeRemaining))
+      {
+         whiteTimeRemaining = defaultStartTime;
+      }
 
-    setTimeRemaining('black', blackTimeRemaining);
+      setTimeRemaining('black', blackTimeRemaining);
 
-    whiteMoveStarted = moment();
-    updateClock('white');
+      whiteMoveStarted = moment();
+      updateClock('white');
 
-    whiteClockInterval = setInterval(function() { updateClock('white') }, 1000);
-    if (currentMove.mt != undefined)
-    {
-       setTimeUsed('black', currentMove.mt);
-    }
+      whiteClockInterval = setInterval(function() { updateClock('white') }, 1000);
+      if (currentMove.mt != undefined)
+      {
+         setTimeUsed('black', currentMove.mt);
+      }
 
-    $('.white-to-move').show();
-  } else {
-    whiteTimeRemaining = Math.ceil(currentTime / 1000) * 1000;
-    blackTimeRemaining = Math.ceil(previousTime / 1000) * 1000 + 1000;
+      $('.white-to-move').show();
+   } else {
+      whiteTimeRemaining = Math.ceil(currentTime / 1000) * 1000;
+      blackTimeRemaining = Math.ceil(previousTime / 1000) * 1000 + 1000;
 
-    if (isNaN(blackTimeRemaining))
-    {
-       blackTimeRemaining = defaultStartTime;
-    }
+      if (isNaN(blackTimeRemaining))
+      {
+         blackTimeRemaining = defaultStartTime;
+      }
 
-    if (isNaN(whiteTimeRemaining))
-    {
-       whiteTimeRemaining = defaultStartTime;
-    }
+      if (isNaN(whiteTimeRemaining))
+      {
+         whiteTimeRemaining = defaultStartTime;
+      }
 
-    setTimeRemaining('white', whiteTimeRemaining);
+      setTimeRemaining('white', whiteTimeRemaining);
 
-    blackMoveStarted = moment();
+      blackMoveStarted = moment();
 
-    updateClock('black');
+      updateClock('black');
 
-    blackClockInterval = setInterval(function() { updateClock('black') }, 1000);
-    if (currentMove.mt != undefined)
-    {
-       setTimeUsed('white', currentMove.mt);
-    }
+      blackClockInterval = setInterval(function() { updateClock('black') }, 1000);
+      if (currentMove.mt != undefined)
+      {
+         setTimeUsed('white', currentMove.mt);
+      }
 
-    $('.black-to-move').show();
-  }
+      $('.black-to-move').show();
+   }
 }
 
 function stopClock(color) {
-  if (color == 'white') {
-    clearInterval(whiteClockInterval);
-    $('.white-to-move').hide();
-  } else {
-    clearInterval(blackClockInterval);
-    $('.black-to-move').hide();
-  }
+   if (color == 'white') {
+      clearInterval(whiteClockInterval);
+      $('.white-to-move').hide();
+   } else {
+      clearInterval(blackClockInterval);
+      $('.black-to-move').hide();
+   }
 }
 
 function updateClock(color) {
-  currentTime = moment();
+   currentTime = moment();
 
-  if (color == 'white') {
-    var diff = currentTime.diff(whiteMoveStarted-timeDiff);
-    var ms = moment.duration(diff);
+   if (color == 'white') {
+      var diff = currentTime.diff(whiteMoveStarted-timeDiff);
+      var ms = moment.duration(diff);
 
-    whiteTimeUsed = ms;
-    tempTimeRemaning = whiteTimeRemaining - whiteTimeUsed + 3000;
+      whiteTimeUsed = ms;
+      tempTimeRemaning = whiteTimeRemaining - whiteTimeUsed + 3000;
 
-    setTimeUsed(color, whiteTimeUsed);
-    setTimeRemaining(color, tempTimeRemaning);
-  } else {
-    var diff = currentTime.diff(blackMoveStarted-timeDiff);
-    var ms = moment.duration(diff);
+      setTimeUsed(color, whiteTimeUsed);
+      setTimeRemaining(color, tempTimeRemaning);
+   } else {
+      var diff = currentTime.diff(blackMoveStarted-timeDiff);
+      var ms = moment.duration(diff);
 
-    blackTimeUsed = ms;
-    tempTimeRemaning = blackTimeRemaining - blackTimeUsed + 3000;
+      blackTimeUsed = ms;
+      tempTimeRemaning = blackTimeRemaining - blackTimeUsed + 3000;
 
-    setTimeUsed(color, blackTimeUsed);
-    setTimeRemaining(color, tempTimeRemaning);
-  }
+      setTimeUsed(color, blackTimeUsed);
+      setTimeRemaining(color, tempTimeRemaning);
+   }
 }
 
 function secFormatNoH(timeip)
 {
-    var sec_num = parseInt(timeip/1000, 10); // don't forget the second param
-    var hours   = Math.floor(sec_num / 3600);
-    var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
-    var seconds = sec_num - (hours * 3600) - (minutes * 60);
+   var sec_num = parseInt(timeip/1000, 10); // don't forget the second param
+   var hours   = Math.floor(sec_num / 3600);
+   var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
+   var seconds = sec_num - (hours * 3600) - (minutes * 60);
 
-    if (hours   < 10) {hours   = "0"+hours;}
-    if (minutes < 10) {minutes = "0"+minutes;}
-    if (seconds < 10) {seconds = "0"+seconds;}
-    return minutes+':'+seconds;
+   if (hours   < 10) {hours   = "0"+hours;}
+   if (minutes < 10) {minutes = "0"+minutes;}
+   if (seconds < 10) {seconds = "0"+seconds;}
+   return minutes+':'+seconds;
 }
 
 function secFormat(timeip)
 {
-    var sec_num = parseInt(timeip/1000, 10); // don't forget the second param
-    var hours   = Math.floor(sec_num / 3600);
-    var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
-    var seconds = sec_num - (hours * 3600) - (minutes * 60);
+   var sec_num = parseInt(timeip/1000, 10); // don't forget the second param
+   var hours   = Math.floor(sec_num / 3600);
+   var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
+   var seconds = sec_num - (hours * 3600) - (minutes * 60);
 
-    if (hours   < 10) {hours   = "0"+hours;}
-    if (minutes < 10) {minutes = "0"+minutes;}
-    if (seconds < 10) {seconds = "0"+seconds;}
-    return hours+':'+minutes+':'+seconds;
+   if (hours   < 10) {hours   = "0"+hours;}
+   if (minutes < 10) {minutes = "0"+minutes;}
+   if (seconds < 10) {seconds = "0"+seconds;}
+   return hours+':'+minutes+':'+seconds;
 }
 
 function setTimeRemaining(color, time)
 {
-  if (time < 0) {
-    time = 0;
-  }
+   if (time < 0) {
+      time = 0;
+   }
 
-  if (viewingActiveMove) {
-    $('.' + color + '-time-remaining').html(secFormat(time));
-  }
+   if (viewingActiveMove) {
+      $('.' + color + '-time-remaining').html(secFormat(time));
+   }
 }
 
 function setTimeUsed(color, time) {
-  if (viewingActiveMove) {
-    $('.' + color + '-time-used').html(secFormatNoH(time));
-  }
+   if (viewingActiveMove) {
+      $('.' + color + '-time-used').html(secFormatNoH(time));
+   }
 }
 
 function setUsers(data)
@@ -415,48 +411,40 @@ function setPgn(pgn)
       plog ("XXX: Entered for pgn.Moves.length:" + pgn.Moves.length + " , round is :" + pgn.Headers.Round, 1);
    }
 
-   if (crosstableData)
-   {
-      updateScoreHeadersData();
-   }
+   updateH2hData();
+   updateScoreHeadersData();
 
-   if (pgn.gameChanged)
-   {
+   if (pgn.gameChanged) {
+      eventNameHeader = 0;
       prevPgnData = pgn;
+      prevPgnData.gameChanged = 0;
+      plog ("New game, round is :" + parseFloat(pgn.Headers.Round), 0);
    }
-
-   if (prevPgnData)
-   {
+   else {
       plog ("prevPgnData.Moves.length:" + prevPgnData.Moves.length + " ,pgn.lastMoveLoaded:" + pgn.lastMoveLoaded, 0);
+      if (parseFloat(prevPgnData.Headers.Round) != parseFloat(pgn.Headers.Round))
+      {
+         eventNameHeader = 0;
+         setTimeout(function() { updatePgn(1); }, 100);
+         return;
+      }
       if (prevPgnData.Moves.length < pgn.lastMoveLoaded)
       {
-         setTimeout(function() { updateAll(); }, 100);
-         return;
-      }
-      else if (parseFloat(prevPgnData.Headers.Round) != parseFloat(pgn.Headers.Round))
-      {
+         eventNameHeader = 0;
          setTimeout(function() { updateAll(); }, 100);
          return;
       }
    }
 
-   if (prevPgnData)
-   {
-      _.each(pgn.Moves, function(move, key) {
-         if (typeof move.Moveno != 'undefined' && parseInt(move.Moveno) > 0)
-         {
-            if (!prevPgnData.Moves[key])
-            {
-               prevPgnData.Moves.push(pgn.Moves[key]);
-            }
-         }
-      });
+   if (prevPgnData) {
+      for (let i = 0 ; i < pgn.totalSent ; i++) {
+         prevPgnData.Moves[i + pgn.lastMoveLoaded] = pgn.Moves [i];
+      }
       prevPgnData.BlackEngineOptions = pgn.BlackEngineOptions;
       prevPgnData.WhiteEngineOptions = pgn.WhiteEngineOptions;
       prevPgnData.Headers = pgn.Headers;
       prevPgnData.Users = pgn.Users;
       pgn = prevPgnData;
-      loadedPgn = prevPgnData;
    }
    else
    {
@@ -471,329 +459,327 @@ function setPgn(pgn)
       currentPlyCount = pgn.Moves.length;
    }
 
-  if (typeof pgn.Headers != 'undefined') {
-     if (typeof pgn.Moves != 'undefined' && pgn.Moves.length > 0) {
-       currentPosition = pgn.Moves[pgn.Moves.length-1].fen;
-       moveFrom = pgn.Moves[pgn.Moves.length-1].from;
-       moveTo = pgn.Moves[pgn.Moves.length-1].to;
+   if (typeof pgn.Headers != 'undefined') {
+      if (typeof pgn.Moves != 'undefined' && pgn.Moves.length > 0) {
+         currentPosition = pgn.Moves[pgn.Moves.length-1].fen;
+         moveFrom = pgn.Moves[pgn.Moves.length-1].from;
+         moveTo = pgn.Moves[pgn.Moves.length-1].to;
 
-       currentGameActive = (pgn.Headers.Termination == 'unterminated');
-       whiteToPlay = (currentPlyCount % 2 == 0);
-     }
-  }
+         currentGameActive = (pgn.Headers.Termination == 'unterminated');
+         whiteToPlay = (currentPlyCount % 2 == 0);
+      }
+   }
 
-  if (!currentGameActive) {
-    stopClock('white');
-    stopClock('black');
-  }
-
-  if (currentGameActive) {
-    if (whiteToPlay) {
-      stopClock('black');
-    } else {
+   if (!currentGameActive) {
       stopClock('white');
-    }
-  }
+      stopClock('black');
+   }
 
-  plog ("XXX: loadedPlies: " + loadedPlies + " ,currentPlyCount:" + currentPlyCount +
-        " ,currentGameActive:" + currentGameActive + " ,gameActive:" + gameActive + " :gamechanged:" + pgn.gameChanged , 1);
-  if (loadedPlies == currentPlyCount && (currentGameActive == gameActive)) {
-    return;
-  }
+   if (currentGameActive) {
+      if (whiteToPlay) {
+         stopClock('black');
+      } else {
+         stopClock('white');
+      }
+   }
 
-  if (timeDiffRead > 0)
-  {
-     timeDiff = 0;
-  }
+   plog ("XXX: loadedPlies: " + loadedPlies + " ,currentPlyCount:" + currentPlyCount +
+      " ,currentGameActive:" + currentGameActive + " ,gameActive:" + gameActive + " :gamechanged:" + pgn.gameChanged , 1);
+   if (loadedPlies == currentPlyCount && (currentGameActive == gameActive)) {
+      return;
+   }
 
-  let previousPlies = loadedPlies;
+   if (timeDiffRead > 0)
+   {
+      timeDiff = 0;
+   }
 
-  loadedPlies = currentPlyCount;
-  gameActive = currentGameActive;
+   let previousPlies = loadedPlies;
 
-  if (activePly == 0) {
-    activePly = currentPlyCount;
-    viewingActiveMove = true;
-  }
-  if (activePly == currentPlyCount) {
-    viewingActiveMove = true;
-    $('#newmove').addClass('d-none');
-    newMovesCount = 0;
-    $('#newmove').attr('data-count', 0);
-    board.clearAnnotation();
-  }
+   loadedPlies = currentPlyCount;
+   gameActive = currentGameActive;
+
+   if (activePly == 0) {
+      activePly = currentPlyCount;
+      viewingActiveMove = true;
+   }
+   if (activePly == currentPlyCount) {
+      viewingActiveMove = true;
+      $('#newmove').addClass('d-none');
+      newMovesCount = 0;
+      $('#newmove').attr('data-count', 0);
+      board.clearAnnotation();
+   }
    if (viewingActiveMove && activePly != currentPlyCount) {
       activePly = currentPlyCount;
       if (playSound)
       {
          $('#move_sound')[0].play();
       }
-  }
+   }
 
-  if (previousPlies > currentPlyCount) {
-    initializeCharts();
-    standTableInitialized = false;
-    updateStandtable();
-  }
+   if (previousPlies > currentPlyCount) {
+      initializeCharts();
+   }
 
-  var whiteEval = {};
-  var blackEval = {};
+   var whiteEval = {};
+   var blackEval = {};
 
-  eval = getEvalFromPly(pgn.Moves.length - 1);
+   eval = getEvalFromPly(pgn.Moves.length - 1);
 
-  activeFen = pgn.Moves[pgn.Moves.length - 1].fen;
-  if (viewingActiveMove) {
-    currentMove = pgn.Moves[pgn.Moves.length - 1];
-    lastMove = currentMove.to;
-    setMoveMaterial(currentMove.material, 0);
-  }
+   activeFen = pgn.Moves[pgn.Moves.length - 1].fen;
+   if (viewingActiveMove) {
+      currentMove = pgn.Moves[pgn.Moves.length - 1];
+      lastMove = currentMove.to;
+      setMoveMaterial(currentMove.material, 0);
+   }
 
-  if (!whiteToPlay) {
-    whiteEval = eval;
-  } else {
-    blackEval = eval;
-  }
-
-  clockCurrentMove = currentMove;
-  clockPreviousMove = '';
-
-  if (pgn.Moves.length > 1) {
-    eval = getEvalFromPly(pgn.Moves.length-2);
-
-    selectedMove = pgn.Moves[pgn.Moves.length-2];
-    clockPreviousMove = selectedMove;
-
-    if (whiteToPlay) {
+   if (!whiteToPlay) {
       whiteEval = eval;
-    } else {
+   } else {
       blackEval = eval;
-    }
-  }
+   }
 
-  if (viewingActiveMove) {
-    updateMoveValues(whiteToPlay, whiteEval, blackEval);
-    findDiffPv(whiteEval.pv, blackEval.pv);
-    updateEnginePv('white', whiteToPlay, whiteEval.pv);
-    updateEnginePv('black', whiteToPlay, blackEval.pv);
-  }
+   clockCurrentMove = currentMove;
+   clockPreviousMove = '';
 
-  if (whiteToPlay)
-  {
-     if (pgn.Headers.WhiteTimeControl)
-     {
-        pgn.Headers.TimeControl = pgn.Headers.WhiteTimeControl;
-     }
-  }
-  else
-  {
-     if (pgn.Headers.BlackTimeControl)
-     {
-        pgn.Headers.TimeControl = pgn.Headers.BlackTimeControl;
-     }
-  }
+   if (pgn.Moves.length > 1) {
+      eval = getEvalFromPly(pgn.Moves.length-2);
 
-  var TC = pgn.Headers.TimeControl.split("+");
-  var base = Math.round(TC[0] / 60);
-  TC = base + "'+" + TC[1] + '"';
-  pgn.Headers.TimeControl = TC;
+      selectedMove = pgn.Moves[pgn.Moves.length-2];
+      clockPreviousMove = selectedMove;
 
-  defaultStartTime = (base * 60 * 1000);
-
-  if (currentGameActive)
-  {
-     if (whiteToPlay)
-     {
-        startClock('white', clockCurrentMove, clockPreviousMove);
-     }
-     else
-     {
-        startClock('black', clockCurrentMove, clockPreviousMove);
-     }
-  }
-  else
-  {
-     stopClock('white');
-     stopClock('black');
-  }
-
-  if (viewingActiveMove) {
-    if (pgn.Moves.length > 0) {
-      boardEl.find('.' + squareClass).removeClass(highlightClass);
-      boardEl.find('.square-' + moveFrom).addClass(highlightClass);
-      boardEl.find('.square-' + moveTo).addClass(highlightClass);
-      squareToHighlight = moveTo;
-    }
-    board.position(currentPosition, false);
-  }
-
-  if (typeof pgn.Headers == 'undefined') {
-    plog ("XXX: Returning here because headers not defined", 0);
-    return;
-  }
-
-  listPosition();
-
-  var title = "TCEC - Live Computer Chess Broadcast";
-  if (pgn.Moves.length > 0) {
-    title = pgn.Headers.White + ' vs. ' + pgn.Headers.Black + ' - ' + title;
-    if (pgn.Moves.PlyCount % 2 == 0 || pgn.Headers.Termination != 'unterminated') {
-      $("#favicon").attr("href", "img/favicon.ico");
-    } else {
-      $("#favicon").attr("href", "img/faviconb.ico");
-    }
-  }
-
-  $(document).attr("title", title);
-
-  var termination = pgn.Headers.Termination;
-  if (pgn.Moves.length > 0) {
-    var adjudication = pgn.Moves[pgn.Moves.length - 1].adjudication;
-    var piecesleft = listPosition();
-    pgn.Headers.piecesleft = piecesleft;
-    if (eventNameHeader == 0)
-    {
-       eventNameHeader = pgn.Headers.Event;
-       if (eventTmp = eventNameHeader.match(/TCEC Season (.*)/))
-       {
-          plog (eventTmp[1], 0);
-          pgn.Headers.Event = "S" + eventTmp[1];
-          eventNameHeader = pgn.Headers.Event;
-       }
-    }
-    else
-    {
-       pgn.Headers.Event = eventNameHeader;
-    }
-    if (termination == 'unterminated' && typeof adjudication != 'undefined') {
-      termination = '-';
-      var movesToDraw = 50;
-      var movesToResignOrWin = 50;
-      var movesTo50R = 50;
-
-      if (Math.abs(adjudication.Draw) <= 10 && pgn.Moves.length > 58)
-      {
-         movesToDraw = Math.max(Math.abs(adjudication.Draw), 69 - pgn.Moves.length);
+      if (whiteToPlay) {
+         whiteEval = eval;
+      } else {
+         blackEval = eval;
       }
+   }
 
-      if (Math.abs(adjudication.ResignOrWin) < 11)
+   if (viewingActiveMove) {
+      updateMoveValues(whiteToPlay, whiteEval, blackEval);
+      findDiffPv(whiteEval.pv, blackEval.pv);
+      updateEnginePv('white', whiteToPlay, whiteEval.pv);
+      updateEnginePv('black', whiteToPlay, blackEval.pv);
+   }
+
+   if (whiteToPlay)
+   {
+      if (pgn.Headers.WhiteTimeControl)
       {
-         movesToResignOrWin = Math.abs(adjudication.ResignOrWin);
+         pgn.Headers.TimeControl = pgn.Headers.WhiteTimeControl;
       }
-
-      if (adjudication.FiftyMoves < 51)
+   }
+   else
+   {
+      if (pgn.Headers.BlackTimeControl)
       {
-         movesTo50R = adjudication.FiftyMoves;
+         pgn.Headers.TimeControl = pgn.Headers.BlackTimeControl;
       }
+   }
 
-      if (movesTo50R < 50 && movesTo50R < movesToResignOrWin)
+   var TC = pgn.Headers.TimeControl.split("+");
+   var base = Math.round(TC[0] / 60);
+   TC = base + "'+" + TC[1] + '"';
+   pgn.Headers.TimeControl = TC;
+
+   defaultStartTime = (base * 60 * 1000);
+
+   if (currentGameActive)
+   {
+      if (whiteToPlay)
       {
-         if(movesTo50R == 1)
-         {
-            termination = movesTo50R + ' move 50mr'
-         }
-         else
-         {
-            termination = movesTo50R + ' moves 50mr'
-         }
-         pgn.Headers.movesTo50R = movesTo50R;
+         startClock('white', clockCurrentMove, clockPreviousMove);
       }
-
-      if (movesToResignOrWin < 50 && movesToResignOrWin < movesToDraw && movesToResignOrWin < movesTo50R)
+      else
       {
-         if(movesToResignOrWin == 1)
-         {
-            termination = movesToResignOrWin + ' ply win';
-         }
-         else
-         {
-            termination = movesToResignOrWin + ' plies win';
-         }
-         pgn.Headers.movesToResignOrWin = movesToResignOrWin;
+         startClock('black', clockCurrentMove, clockPreviousMove);
       }
+   }
+   else
+   {
+      stopClock('white');
+      stopClock('black');
+   }
 
-      if (movesToDraw < 50 && movesToDraw <= movesTo50R && movesToDraw <= movesToResignOrWin)
-      {
-         if (movesToDraw == 1)
-         {
-            termination = movesToDraw + ' ply draw';
-         }
-         else
-         {
-            termination = movesToDraw + ' plies draw';
-         }
-         pgn.Headers.movesToDraw = movesToDraw + 'p';
+   if (viewingActiveMove) {
+      if (pgn.Moves.length > 0) {
+         boardEl.find('.' + squareClass).removeClass(highlightClass);
+         boardEl.find('.square-' + moveFrom).addClass(highlightClass);
+         boardEl.find('.square-' + moveTo).addClass(highlightClass);
+         squareToHighlight = moveTo;
       }
+      board.position(currentPosition, false);
+   }
 
-      $('#event-overview').bootstrapTable('hideColumn', 'Termination');
-      $('#event-overview').bootstrapTable('showColumn', 'movesToDraw');
-      $('#event-overview').bootstrapTable('showColumn', 'movesToResignOrWin');
-      $('#event-overview').bootstrapTable('showColumn', 'movesTo50R');
-    } else {
-      pgn.Headers.Termination = pgn.Headers.TerminationDetails;
-      plog ("pgn.Headers.Termination: yes" + pgn.Headers.Termination, 0);
-      if ((pgn.Headers.Termination == 'undefined') ||
-          (pgn.Headers.Termination == undefined))
+   if (typeof pgn.Headers == 'undefined') {
+      plog ("XXX: Returning here because headers not defined", 0);
+      return;
+   }
+
+   listPosition();
+
+   var title = "TCEC - Live Computer Chess Broadcast";
+   if (pgn.Moves.length > 0) {
+      title = pgn.Headers.White + ' vs. ' + pgn.Headers.Black + ' - ' + title;
+      if (pgn.Moves.PlyCount % 2 == 0 || pgn.Headers.Termination != 'unterminated') {
+         $("#favicon").attr("href", "img/favicon.ico");
+      } else {
+         $("#favicon").attr("href", "img/faviconb.ico");
+      }
+   }
+
+   $(document).attr("title", title);
+
+   var termination = pgn.Headers.Termination;
+   if (pgn.Moves.length > 0) {
+      var adjudication = pgn.Moves[pgn.Moves.length - 1].adjudication;
+      var piecesleft = listPosition();
+      pgn.Headers.piecesleft = piecesleft;
+      if (eventNameHeader == 0)
       {
+         eventNameHeader = pgn.Headers.Event;
+         if (eventTmp = eventNameHeader.match(/TCEC Season (.*)/))
+         {
+            plog (eventTmp[1], 0);
+            pgn.Headers.Event = "S" + eventTmp[1];
+            eventNameHeader = pgn.Headers.Event;
+         }
+      }
+      else
+      {
+         pgn.Headers.Event = eventNameHeader;
+      }
+      if (termination == 'unterminated' && typeof adjudication != 'undefined') {
+         termination = '-';
+         var movesToDraw = 50;
+         var movesToResignOrWin = 50;
+         var movesTo50R = 50;
+
+         if (Math.abs(adjudication.Draw) <= 10 && pgn.Moves.length > 58)
+         {
+            movesToDraw = Math.max(Math.abs(adjudication.Draw), 69 - pgn.Moves.length);
+         }
+
+         if (Math.abs(adjudication.ResignOrWin) < 11)
+         {
+            movesToResignOrWin = Math.abs(adjudication.ResignOrWin);
+         }
+
+         if (adjudication.FiftyMoves < 51)
+         {
+            movesTo50R = adjudication.FiftyMoves;
+         }
+
+         if (movesTo50R < 50 && movesTo50R < movesToResignOrWin)
+         {
+            if(movesTo50R == 1)
+            {
+               termination = movesTo50R + ' move 50mr'
+            }
+            else
+            {
+               termination = movesTo50R + ' moves 50mr'
+            }
+            pgn.Headers.movesTo50R = movesTo50R;
+         }
+
+         if (movesToResignOrWin < 50 && movesToResignOrWin < movesToDraw && movesToResignOrWin < movesTo50R)
+         {
+            if(movesToResignOrWin == 1)
+            {
+               termination = movesToResignOrWin + ' ply win';
+            }
+            else
+            {
+               termination = movesToResignOrWin + ' plies win';
+            }
+            pgn.Headers.movesToResignOrWin = movesToResignOrWin;
+         }
+
+         if (movesToDraw < 50 && movesToDraw <= movesTo50R && movesToDraw <= movesToResignOrWin)
+         {
+            if (movesToDraw == 1)
+            {
+               termination = movesToDraw + ' ply draw';
+            }
+            else
+            {
+               termination = movesToDraw + ' plies draw';
+            }
+            pgn.Headers.movesToDraw = movesToDraw + 'p';
+         }
+
          $('#event-overview').bootstrapTable('hideColumn', 'Termination');
          $('#event-overview').bootstrapTable('showColumn', 'movesToDraw');
          $('#event-overview').bootstrapTable('showColumn', 'movesToResignOrWin');
          $('#event-overview').bootstrapTable('showColumn', 'movesTo50R');
+      } else {
+         pgn.Headers.Termination = pgn.Headers.TerminationDetails;
+         plog ("pgn.Headers.Termination: yes" + pgn.Headers.Termination, 0);
+         if ((pgn.Headers.Termination == 'undefined') ||
+            (pgn.Headers.Termination == undefined))
+         {
+            $('#event-overview').bootstrapTable('hideColumn', 'Termination');
+            $('#event-overview').bootstrapTable('showColumn', 'movesToDraw');
+            $('#event-overview').bootstrapTable('showColumn', 'movesToResignOrWin');
+            $('#event-overview').bootstrapTable('showColumn', 'movesTo50R');
+         }
+         else
+         {
+            $('#event-overview').bootstrapTable('showColumn', 'Termination');
+            $('#event-overview').bootstrapTable('hideColumn', 'movesToDraw');
+            $('#event-overview').bootstrapTable('hideColumn', 'movesToResignOrWin');
+            $('#event-overview').bootstrapTable('hideColumn', 'movesTo50R');
+         }
       }
-      else
+   }
+
+   $('#event-overview').bootstrapTable('load', [pgn.Headers]);
+   setUsersMain(pgn.Users);
+   $('#event-name').html(pgn.Headers.Event);
+
+   if (viewingActiveMove) {
+      setInfoFromCurrentHeaders();
+   }
+
+   updateChartData();
+
+   $('#engine-history').html('');
+   _.each(pgn.Moves, function(move, key) {
+      ply = key + 1;
+      if (key % 2 == 0) {
+         number = (key / 2) + 1;
+         var numlink = "<a class='numsmall'>" + number + ". </a>";
+         $('#engine-history').append(numlink);
+      }
+      var linkClass = "";
+      if (activePly == ply) {
+         linkClass = "active-move"
+      }
+
+      if (move.book == true)
       {
-         $('#event-overview').bootstrapTable('showColumn', 'Termination');
-         $('#event-overview').bootstrapTable('hideColumn', 'movesToDraw');
-         $('#event-overview').bootstrapTable('hideColumn', 'movesToResignOrWin');
-         $('#event-overview').bootstrapTable('hideColumn', 'movesTo50R');
+         linkClass += " green";
+         bookmove = ply;
       }
-    }
-  }
 
-  $('#event-overview').bootstrapTable('load', [pgn.Headers]);
-  setUsersMain(pgn.Users);
-  $('#event-name').html(pgn.Headers.Event);
+      var moveNotation = move.m;
+      if (moveNotation.length != 2) {
+         moveNotation = move.m.charAt(0) + move.m.slice(1);
+      }
 
-  if (viewingActiveMove) {
-    setInfoFromCurrentHeaders();
-  }
+      from = move.to;
 
-  updateChartData();
-
-  $('#engine-history').html('');
-  _.each(pgn.Moves, function(move, key) {
-    ply = key + 1;
-    if (key % 2 == 0) {
-      number = (key / 2) + 1;
-      var numlink = "<a class='numsmall'>" + number + ". </a>";
-      $('#engine-history').append(numlink);
-    }
-    var linkClass = "";
-    if (activePly == ply) {
-      linkClass = "active-move"
-    }
-
-    if (move.book == true)
-    {
-       linkClass += " green";
-       bookmove = ply;
-    }
-
-    var moveNotation = move.m;
-    if (moveNotation.length != 2) {
-      moveNotation = move.m.charAt(0) + move.m.slice(1);
-    }
-
-    from = move.to;
-
-    var link = "<a href='#' ply='" + ply + "' fen='" + move.fen + "' from='" + move.from + "' to='" + move.to + "' class='change-move " + linkClass + "'>" + moveNotation + "</a>";
-    $('#engine-history').append(link + ' ');
-  });
-  $('#engine-history').append(pgn.Headers.Result);
-  $("#engine-history").scrollTop($("#engine-history")[0].scrollHeight);
-  if (pgn.gameChanged)
-  {
-     plog ("Came to setpgn need to reread dataa at end", 0);
-  }
+      var link = "<a href='#' ply='" + ply + "' fen='" + move.fen + "' from='" + move.from + "' to='" + move.to + "' class='change-move " + linkClass + "'>" + moveNotation + "</a>";
+      $('#engine-history').append(link + ' ');
+   });
+   $('#engine-history').append(pgn.Headers.Result);
+   $("#engine-history").scrollTop($("#engine-history")[0].scrollHeight);
+   if (pgn.gameChanged)
+   {
+      plog ("Came to setpgn need to reread dataa at end", 0);
+   }
 }
 
 function copyFenAnalysis()
@@ -852,30 +838,30 @@ function getShortEngineName(engine)
 
 function setInfoFromCurrentHeaders()
 {
-  var header = loadedPgn.Headers.White;
-  var name = header;
-  name = getShortEngineName(header);
-  $('.white-engine-name').html(name);
-  $('.white-engine-name-full').html(header);
-  whiteEngineFull = header;
-  var imgsrc = 'img/engines/' + name + '.jpg';
-  $('#white-engine').attr('src', imgsrc);
-  $('#white-engine').attr('alt', header);
-  $('#white-engine-chessprogramming').attr('href', 'https://www.chessprogramming.org/' + name);
-  header = loadedPgn.Headers.Black;
-  blackEngineFull = header;
-  name = getShortEngineName(header);
-  $('.black-engine-name').html(name);
-  $('.black-engine-name-full').html(header);
-  var imgsrc = 'img/engines/' + name + '.jpg';
-  $('#black-engine').attr('src', imgsrc);
-  $('#black-engine').attr('alt', header);
-  $('#black-engine-chessprogramming').attr('href', 'https://www.chessprogramming.org/' + name);
+   var header = prevPgnData.Headers.White;
+   var name = header;
+   name = getShortEngineName(header);
+   $('.white-engine-name').html(name);
+   $('.white-engine-name-full').html(header);
+   whiteEngineFull = header;
+   var imgsrc = 'img/engines/' + name + '.jpg';
+   $('#white-engine').attr('src', imgsrc);
+   $('#white-engine').attr('alt', header);
+   $('#white-engine-chessprogramming').attr('href', 'https://www.chessprogramming.org/' + name);
+   header = prevPgnData.Headers.Black;
+   blackEngineFull = header;
+   name = getShortEngineName(header);
+   $('.black-engine-name').html(name);
+   $('.black-engine-name-full').html(header);
+   var imgsrc = 'img/engines/' + name + '.jpg';
+   $('#black-engine').attr('src', imgsrc);
+   $('#black-engine').attr('alt', header);
+   $('#black-engine-chessprogramming').attr('href', 'https://www.chessprogramming.org/' + name);
 }
 
 function getMoveFromPly(ply)
 {
-   return loadedPgn.Moves[ply];
+   return prevPgnData.Moves[ply];
 }
 
 function fixedDeci(value)
@@ -924,83 +910,83 @@ function getTBHits(tbhits)
 
 function getEvalFromPly(ply)
 {
-  selectedMove = loadedPgn.Moves[ply];
+   selectedMove = prevPgnData.Moves[ply];
 
-  side = 'White';
-  if (whiteToPlay) {
-    side = 'Black';
-  }
+   side = 'White';
+   if (whiteToPlay) {
+      side = 'Black';
+   }
 
-  if (ply < 0)
-  {
-     return {
-       'side': side,
-       'eval': "n/a",
-       'pv': {},
-       'speed': "n/a",
-       'nodes': "n/a",
-       'mtime': "n/a",
-       'depth': "n/a",
-       'tbhits': "n/a",
-       'timeleft': "n/a"
-     };
-  }
+   if (ply < 0)
+   {
+      return {
+         'side': side,
+         'eval': "n/a",
+         'pv': {},
+         'speed': "n/a",
+         'nodes': "n/a",
+         'mtime': "n/a",
+         'depth': "n/a",
+         'tbhits': "n/a",
+         'timeleft': "n/a"
+      };
+   }
 
-  //arun
-  if (ply < bookmove || (typeof selectedMove == 'undefined') || (typeof (selectedMove.pv) == 'undefined'))
-  {
-     return {
-       'side': side,
-       'eval': "book",
-       'pv': {},
-       'speed': "book",
-       'nodes': "book",
-       'mtime': "book",
-       'depth': "book",
-       'tbhits': "book",
-       'timeleft': "book"
-     };
-  }
+   //arun
+   if (ply < bookmove || (typeof selectedMove == 'undefined') || (typeof (selectedMove.pv) == 'undefined'))
+   {
+      return {
+         'side': side,
+         'eval': "book",
+         'pv': {},
+         'speed': "book",
+         'nodes': "book",
+         'mtime': "book",
+         'depth': "book",
+         'tbhits': "book",
+         'timeleft': "book"
+      };
+   }
 
-  if (typeof selectedMove == 'undefined') {
-    return '';
-  }
-  clockPreviousMove = selectedMove;
-  speed = selectedMove.s;
-  if (speed < 1000000) {
-    speed = Math.round(speed / 1000) + ' knps';
-  } else {
-    speed = Math.round(speed / 1000000) + ' Mnps';
-  }
+   if (typeof selectedMove == 'undefined') {
+      return '';
+   }
+   clockPreviousMove = selectedMove;
+   speed = selectedMove.s;
+   if (speed < 1000000) {
+      speed = Math.round(speed / 1000) + ' knps';
+   } else {
+      speed = Math.round(speed / 1000000) + ' Mnps';
+   }
 
-  nodes = getNodes(selectedMove.n);
+   nodes = getNodes(selectedMove.n);
 
-  var depth = selectedMove.d + '/' + selectedMove.sd;
-  var tbHits = 0;
-  tbHits = getTBHits(selectedMove.tb);
+   var depth = selectedMove.d + '/' + selectedMove.sd;
+   var tbHits = 0;
+   tbHits = getTBHits(selectedMove.tb);
 
-  var evalRet = '';
+   var evalRet = '';
 
-  if (!isNaN(selectedMove.wv))
-  {
-     evalRet = parseFloat(selectedMove.wv).toFixed(2);
-  }
-  else
-  {
-     evalRet = selectedMove.wv;
-  }
+   if (!isNaN(selectedMove.wv))
+   {
+      evalRet = parseFloat(selectedMove.wv).toFixed(2);
+   }
+   else
+   {
+      evalRet = selectedMove.wv;
+   }
 
-  return {
-    'side': side,
-    'eval': evalRet,
-    'pv': selectedMove.pv.Moves,
-    'speed': speed,
-    'nodes': nodes,
-    'mtime': secFormatNoH(selectedMove.mt),
-    'depth': depth,
-    'tbhits': tbHits,
-    'timeleft': secFormat(selectedMove.tl),
-  };
+   return {
+      'side': side,
+      'eval': evalRet,
+      'pv': selectedMove.pv.Moves,
+      'speed': speed,
+      'nodes': nodes,
+      'mtime': secFormatNoH(selectedMove.mt),
+      'depth': depth,
+      'tbhits': tbHits,
+      'timeleft': secFormat(selectedMove.tl),
+   };
 }
 
 function getScorePct(reverse, engineName, draEval, winEval, egEval)
@@ -1072,7 +1058,7 @@ function getPct(engineName, eval)
 
    if (isNaN(eval)) {
       return (engineName + ' ' + eval);
-      }
+   }
 
    if (shortName == "LCZero")
    {
@@ -1110,8 +1096,8 @@ function updateMoveValues(whiteToPlay, whiteEval, blackEval)
 
    $('.white-engine-eval').html(whiteEval.eval);
 
-   var blackEvalPt = getPct(loadedPgn.Headers.Black, blackEval.eval);
-   var whiteEvalPt = getPct(loadedPgn.Headers.White, whiteEval.eval);
+   var blackEvalPt = getPct(prevPgnData.Headers.Black, blackEval.eval);
+   var whiteEvalPt = getPct(prevPgnData.Headers.White, whiteEval.eval);
    $('.black-engine-name-full-new').html(blackEvalPt);
    $('.white-engine-name-full-new').html(whiteEvalPt);
    //$(eval a=(((((Math.atan(($(query)100)/290.680623072))/3.096181612)+0.5)100)-50);
@@ -1134,168 +1120,168 @@ function updateMoveValues(whiteToPlay, whiteEval, blackEval)
 function updateEnginePv(color, whiteToPlay, moves)
 {
    var classhigh = '';
-  if (typeof moves != 'undefined') {
+   if (typeof moves != 'undefined') {
 
-    currentMove = Math.floor(activePly / 2);
+      currentMove = Math.floor(activePly / 2);
 
-    if (color == 'white') {
-      whitePv = moves;
-      //activePv = whitePv.slice();
-      //setPvFromKey(0, 'white', 0);
-    } else {
-      blackPv = moves;
-      //activePv = blackPv.slice();
-      //setPvFromKey(0, 'black', 0);
-    }
-
-    keyOffset = 0;
-    if (color == 'black' && !whiteToPlay) {
-      currentMove -= 2;
-      // keyOffset = 1;
-    }
-
-    if (!whiteToPlay) {
-      currentMove++;
-    }
-    if (!whiteToPlay && color == "black") {
-      currentMove++;
-    }
-    setpvmove = -1;
-    $('#' + color + '-engine-pv').html('');
-    $('.' + color + '-engine-pv').html('');
-    _.each(moves, function(move, key) {
-      classhigh = "";
-      effectiveKey = key + keyOffset;
-      pvMove = currentMove + Math.floor(effectiveKey / 2);
-      pvMoveNofloor = currentMove + effectiveKey;
-      if (whiteToPlay)
-      {
-         if (color == "white" && (highlightpv == key))
-         {
-            plog ("Need to highlight:" + pvMove + ", move is :" + move.m, 1);
-            classhigh = "active-pv-move";
-            setpvmove = effectiveKey;
-         }
-         if (color == "black" && key == 0)
-         {
-            pvMoveNofloor = pvMoveNofloor + 1;
-         }
-         if (color == "black" && (highlightpv == key + 1))
-         {
-            plog ("Need to highlight:" + pvMove + ", move is :" + move.m, 1);
-            classhigh = "active-pv-move";
-            setpvmove = effectiveKey;
-         }
+      if (color == 'white') {
+         whitePv = moves;
+         //activePv = whitePv.slice();
+         //setPvFromKey(0, 'white', 0);
+      } else {
+         blackPv = moves;
+         //activePv = blackPv.slice();
+         //setPvFromKey(0, 'black', 0);
       }
-      else
-      {
-         if (color == "white" && (highlightpv - 1 == key))
-         {
-            plog ("Need to highlight:" + pvMove + ", move is :" + move.m, 1);
-            classhigh = "active-pv-move";
-            setpvmove = effectiveKey;
-         }
-         if (color == "black" && (highlightpv == key))
-         {
-            plog ("Need to highlight:" + pvMove + ", move is :" + move.m, 1);
-            classhigh = "active-pv-move";
-            setpvmove = effectiveKey;
-         }
+
+      keyOffset = 0;
+      if (color == 'black' && !whiteToPlay) {
+         currentMove -= 2;
+         // keyOffset = 1;
       }
-      var atsymbol = '';
-      if (setpvmove > -1 && effectiveKey == setpvmove)
-      {
-         pvMove = ' @ ' + pvMove;
-         //console.log ("pvMove is : " + pvMove + " setpvmove:" + setpvmove + ", effectiveKey:" + effectiveKey);
-         atsymbol = ' @ ';
+
+      if (!whiteToPlay) {
+         currentMove++;
       }
-      if (color == "white")
-      {
-         if (effectiveKey % 2 == 0 )
+      if (!whiteToPlay && color == "black") {
+         currentMove++;
+      }
+      setpvmove = -1;
+      $('#' + color + '-engine-pv').html('');
+      $('.' + color + '-engine-pv').html('');
+      _.each(moves, function(move, key) {
+         classhigh = "";
+         effectiveKey = key + keyOffset;
+         pvMove = currentMove + Math.floor(effectiveKey / 2);
+         pvMoveNofloor = currentMove + effectiveKey;
+         if (whiteToPlay)
          {
+            if (color == "white" && (highlightpv == key))
+            {
+               plog ("Need to highlight:" + pvMove + ", move is :" + move.m, 1);
+               classhigh = "active-pv-move";
+               setpvmove = effectiveKey;
+            }
+            if (color == "black" && key == 0)
+            {
+               pvMoveNofloor = pvMoveNofloor + 1;
+            }
+            if (color == "black" && (highlightpv == key + 1))
+            {
+               plog ("Need to highlight:" + pvMove + ", move is :" + move.m, 1);
+               classhigh = "active-pv-move";
+               setpvmove = effectiveKey;
+            }
+         }
+         else
+         {
+            if (color == "white" && (highlightpv - 1 == key))
+            {
+               plog ("Need to highlight:" + pvMove + ", move is :" + move.m, 1);
+               classhigh = "active-pv-move";
+               setpvmove = effectiveKey;
+            }
+            if (color == "black" && (highlightpv == key))
+            {
+               plog ("Need to highlight:" + pvMove + ", move is :" + move.m, 1);
+               classhigh = "active-pv-move";
+               setpvmove = effectiveKey;
+            }
+         }
+         var atsymbol = '';
+         if (setpvmove > -1 && effectiveKey == setpvmove)
+         {
+            pvMove = ' @ ' + pvMove;
+            //console.log ("pvMove is : " + pvMove + " setpvmove:" + setpvmove + ", effectiveKey:" + effectiveKey);
+            atsymbol = ' @ ';
+         }
+         if (color == "white")
+         {
+            if (effectiveKey % 2 == 0 )
+            {
+               $('#' + color + '-engine-pv').append(pvMove + '. ');
+               $('#' + color + '-engine-pv2').append(pvMove + '. ');
+               $('#' + color + '-engine-pv3').append(pvMove + '. ');
+            }
+            else if (effectiveKey % 2 != 0 )
+            {
+               $('#' + color + '-engine-pv').append(atsymbol);
+               $('#' + color + '-engine-pv2').append(atsymbol);
+               $('#' + color + '-engine-pv3').append(atsymbol);
+            }
+         }
+
+         if (color == "black" && effectiveKey % 2 != 0 ) {
+            $('#' + color + '-engine-pv3').append(pvMove + '. ');
             $('#' + color + '-engine-pv').append(pvMove + '. ');
             $('#' + color + '-engine-pv2').append(pvMove + '. ');
-            $('#' + color + '-engine-pv3').append(pvMove + '. ');
          }
-         else if (effectiveKey % 2 != 0 )
-         {
-            $('#' + color + '-engine-pv').append(atsymbol);
-            $('#' + color + '-engine-pv2').append(atsymbol);
-            $('#' + color + '-engine-pv3').append(atsymbol);
-         }
-      }
 
-      if (color == "black" && effectiveKey % 2 != 0 ) {
-        $('#' + color + '-engine-pv3').append(pvMove + '. ');
-        $('#' + color + '-engine-pv').append(pvMove + '. ');
-        $('#' + color + '-engine-pv2').append(pvMove + '. ');
-      }
-
-      if (color == "black")
-      {
-         if (color == "black" && key == 0 )
+         if (color == "black")
          {
-            $('#' + color + '-engine-pv').append(pvMove + '. ');
-            $('#' + color + '-engine-pv2').append(pvMove + '. ');
-            $('#' + color + '-engine-pv3').append(pvMove + '. ');
-            $('#' + color + '-engine-pv').append(' .. ');
-            $('#' + color + '-engine-pv2').append(' .. ');
-            $('#' + color + '-engine-pv3').append(' .. ');
-            currentMove++;
+            if (color == "black" && key == 0 )
+            {
+               $('#' + color + '-engine-pv').append(pvMove + '. ');
+               $('#' + color + '-engine-pv2').append(pvMove + '. ');
+               $('#' + color + '-engine-pv3').append(pvMove + '. ');
+               $('#' + color + '-engine-pv').append(' .. ');
+               $('#' + color + '-engine-pv2').append(' .. ');
+               $('#' + color + '-engine-pv3').append(' .. ');
+               currentMove++;
+            }
+            else if (effectiveKey % 2 == 0 )
+            {
+               $('#' + color + '-engine-pv3').append(atsymbol);
+               $('#' + color + '-engine-pv').append(atsymbol);
+               $('#' + color + '-engine-pv2').append(atsymbol);
+            }
          }
-         else if (effectiveKey % 2 == 0 )
+         plog ("classhigh: " + classhigh, 1);
+         if (color == 'black')
          {
-            $('#' + color + '-engine-pv3').append(atsymbol);
-            $('#' + color + '-engine-pv').append(atsymbol);
-            $('#' + color + '-engine-pv2').append(atsymbol);
+            classhigh += ' blue';
          }
-      }
-      plog ("classhigh: " + classhigh, 1);
-      if (color == 'black')
-      {
-         classhigh += ' blue';
-      }
-      $('#' + color + '-engine-pv').append("<a href='#' id='" + color + '-' + key + "' class='set-pv-board " + classhigh + "' move-key='" + key + "' color='" + color + "'>" + move.m + '</a> ');
-      $('#' + color + '-engine-pv2').append("<a href='#' id='" + color + '-' + key + "' class='set-pv-board " + classhigh + "' move-key='" + key + "' color='" + color + "'>" + move.m + '</a> ');
-      $('#' + color + '-engine-pv3').append("<a href='#' id='c" + color + '-' + key + "' class='set-pv-board " + classhigh + "' move-key='" + key + "' color='" + color + "'>" + move.m + '</a> ');
+         $('#' + color + '-engine-pv').append("<a href='#' id='" + color + '-' + key + "' class='set-pv-board " + classhigh + "' move-key='" + key + "' color='" + color + "'>" + move.m + '</a> ');
+         $('#' + color + '-engine-pv2').append("<a href='#' id='" + color + '-' + key + "' class='set-pv-board " + classhigh + "' move-key='" + key + "' color='" + color + "'>" + move.m + '</a> ');
+         $('#' + color + '-engine-pv3').append("<a href='#' id='c" + color + '-' + key + "' class='set-pv-board " + classhigh + "' move-key='" + key + "' color='" + color + "'>" + move.m + '</a> ');
       });
 
-    plog ("highlightpv is :" + highlightpv);
-    if (highlightpv == 0)
-    {
-       setpvmove = 0;
-    }
-   if (color == 'white')
+plog ("highlightpv is :" + highlightpv);
+if (highlightpv == 0)
+{
+   setpvmove = 0;
+}
+if (color == 'white')
+{
+   whitePv = moves;
+   if (whitePv.length > 0)
    {
-      whitePv = moves;
-      if (whitePv.length > 0)
+      if (plyDiff == 2)
       {
-         if (plyDiff == 2)
-         {
-            setpvmove = whitePv.length - 1;
-            plog ("plyDiff in white:" + whitePv.length);
-         }
-         activePv = whitePv.slice();
-         setPvFromKey(setpvmove, 'white');
+         setpvmove = whitePv.length - 1;
+         plog ("plyDiff in white:" + whitePv.length);
       }
+      activePv = whitePv.slice();
+      setPvFromKey(setpvmove, 'white');
    }
-   else
+}
+else
+{
+   blackPv = moves;
+   if (blackPv.length > 0)
    {
-      blackPv = moves;
-      if (blackPv.length > 0)
+      activePv = blackPv.slice();
+      if (plyDiff == 2)
       {
-         activePv = blackPv.slice();
-         if (plyDiff == 2)
-         {
-            setpvmove = blackPv.length - 1;
-         }
-         setPvFromKey(setpvmove, 'black');
+         setpvmove = blackPv.length - 1;
       }
+      setPvFromKey(setpvmove, 'black');
    }
-  } else {
-    $('#' + color + '-engine-pv').html('');
-    $('.' + color + '-engine-pv').html('');
-  }
+}
+} else {
+   $('#' + color + '-engine-pv').html('');
+   $('.' + color + '-engine-pv').html('');
+}
 }
 
 function setPlyDiv(plyDiffL)
@@ -1364,33 +1350,33 @@ function findDiffPv(whitemoves, blackmoves)
 }
 
 $(document).on('click', '.change-move', function(e) {
-  clickedPly = $(this).attr('ply');
-  clickedFen = $(this).attr('fen');
-  moveFrom = $(this).attr('from');
-  moveTo = $(this).attr('to');
+   clickedPly = $(this).attr('ply');
+   clickedFen = $(this).attr('fen');
+   moveFrom = $(this).attr('from');
+   moveTo = $(this).attr('to');
 
-  viewingActiveMove = false;
+   viewingActiveMove = false;
 
-  $('.active-move').removeClass('active-move');
-  $(this).addClass('active-move');
+   $('.active-move').removeClass('active-move');
+   $(this).addClass('active-move');
 
-  boardEl.find('.' + squareClass).removeClass(highlightClass);
-  boardEl.find('.square-' + moveFrom).addClass(highlightClass);
-  boardEl.find('.square-' + moveTo).addClass(highlightClass);
-  squareToHighlight = moveTo;
+   boardEl.find('.' + squareClass).removeClass(highlightClass);
+   boardEl.find('.square-' + moveFrom).addClass(highlightClass);
+   boardEl.find('.square-' + moveTo).addClass(highlightClass);
+   squareToHighlight = moveTo;
 
-  board.position(clickedFen, false);
-  currentPosition = clickedFen;
-  activePly = clickedPly;
-  e.preventDefault();
-  listPosition();
+   board.position(clickedFen, false);
+   currentPosition = clickedFen;
+   activePly = clickedPly;
+   e.preventDefault();
+   listPosition();
 
-  if (clickedPly == loadedPlies)
-  {
-    viewingActiveMove = true;
-    $('#newmove').addClass('d-none');
-    newMovesCount = 0;
-    $('#newmove').attr('data-count', 0);
+   if (clickedPly == loadedPlies)
+   {
+      viewingActiveMove = true;
+      $('#newmove').addClass('d-none');
+      newMovesCount = 0;
+      $('#newmove').attr('data-count', 0);
    }
 
    handlePlyChange(false);
@@ -1399,109 +1385,109 @@ $(document).on('click', '.change-move', function(e) {
 });
 
 $(document).on('click', '#board-to-first', function(e) {
-  activePly = 1;
-  handlePlyChange();
-  e.preventDefault();
+   activePly = 1;
+   handlePlyChange();
+   e.preventDefault();
 });
 
 $(document).on('click', '#board-previous', function(e) {
-  if (activePly > 1) {
-    activePly--;
-  }
-  handlePlyChange();
-  e.preventDefault();
+   if (activePly > 1) {
+      activePly--;
+   }
+   handlePlyChange();
+   e.preventDefault();
 
-  return false;
+   return false;
 });
 
 var isAutoplay = false;
 
 $(document).on('click', '#board-autoplay', function(e) {
-  e.preventDefault();
-  if (isAutoplay) {
-    isAutoplay = false;
-    $('#board-autoplay i').removeClass('fa-pause');
-    $('#board-autoplay i').addClass('fa-play');
-  } else {
-    isAutoplay = true;
-    $('#board-autoplay i').removeClass('fa-play')
-    $('#board-autoplay i').addClass('fa-pause');
-    boardAutoplay();
-  }
+   e.preventDefault();
+   if (isAutoplay) {
+      isAutoplay = false;
+      $('#board-autoplay i').removeClass('fa-pause');
+      $('#board-autoplay i').addClass('fa-play');
+   } else {
+      isAutoplay = true;
+      $('#board-autoplay i').removeClass('fa-play')
+      $('#board-autoplay i').addClass('fa-pause');
+      boardAutoplay();
+   }
 
-  return false;
+   return false;
 });
 
 function boardAutoplay()
 {
-  if (isAutoplay && activePly >= 1 && activePly < loadedPlies) {
-    activePly++;
-    handlePlyChange();
-    setTimeout(function() { boardAutoplay(); }, 750);
-  } else {
-    isAutoplay = false;
-    $('#board-autoplay i').removeClass('fa-pause');
-    $('#board-autoplay i').addClass('fa-play');
-  }
+   if (isAutoplay && activePly >= 1 && activePly < loadedPlies) {
+      activePly++;
+      handlePlyChange();
+      setTimeout(function() { boardAutoplay(); }, 750);
+   } else {
+      isAutoplay = false;
+      $('#board-autoplay i').removeClass('fa-pause');
+      $('#board-autoplay i').addClass('fa-play');
+   }
 }
 
 $(document).on('click', '#board-next', function(e) {
-  if (activePly < loadedPlies) {
-    activePly++;
-  } else {
-    viewingActiveMove = true;
-  }
-  handlePlyChange();
-  e.preventDefault();
+   if (activePly < loadedPlies) {
+      activePly++;
+   } else {
+      viewingActiveMove = true;
+   }
+   handlePlyChange();
+   e.preventDefault();
 
-  return false;
+   return false;
 });
 
 function onLastMove()
 {
-  activePly = loadedPlies;
-  viewingActiveMove = true;
-  handlePlyChange();
+   activePly = loadedPlies;
+   viewingActiveMove = true;
+   handlePlyChange();
 }
 
 $(document).on('click', '#board-to-last', function(e) {
-  onLastMove();
-  e.preventDefault();
+   onLastMove();
+   e.preventDefault();
 
-  return false;
+   return false;
 });
 
 $(document).on('click', '#board-reverse', function(e) {
-  board.flip();
+   board.flip();
 
-  newOrientation = board.orientation();
+   newOrientation = board.orientation();
 
-  if (board.orientation() == 'black') {
-    oldOrientation = 'white';
-  } else {
-    oldOrientation = 'black';
-  }
+   if (board.orientation() == 'black') {
+      oldOrientation = 'white';
+   } else {
+      oldOrientation = 'black';
+   }
 
-  $('.board-bottom-engine-eval.' + oldOrientation + '-engine-name').removeClass(oldOrientation + '-engine-name').addClass(newOrientation + '-engine-name');
-  $('.board-bottom-engine-eval.' + oldOrientation + '-time-remaining').removeClass(oldOrientation + '-time-remaining').addClass(newOrientation + '-time-remaining');
-  $('.board-bottom-engine-eval.' + oldOrientation + '-time-used').removeClass(oldOrientation + '-time-used').addClass(newOrientation + '-time-used');
-  $('.board-bottom-engine-eval.' + oldOrientation + '-engine-eval').removeClass(oldOrientation + '-engine-eval').addClass(newOrientation + '-engine-eval');
+   $('.board-bottom-engine-eval.' + oldOrientation + '-engine-name').removeClass(oldOrientation + '-engine-name').addClass(newOrientation + '-engine-name');
+   $('.board-bottom-engine-eval.' + oldOrientation + '-time-remaining').removeClass(oldOrientation + '-time-remaining').addClass(newOrientation + '-time-remaining');
+   $('.board-bottom-engine-eval.' + oldOrientation + '-time-used').removeClass(oldOrientation + '-time-used').addClass(newOrientation + '-time-used');
+   $('.board-bottom-engine-eval.' + oldOrientation + '-engine-eval').removeClass(oldOrientation + '-engine-eval').addClass(newOrientation + '-engine-eval');
 
-  $('.board-top-engine-eval.' + newOrientation + '-engine-name').removeClass(newOrientation + '-engine-name').addClass(oldOrientation + '-engine-name');
-  $('.board-top-engine-eval.' + newOrientation + '-time-remaining').removeClass(newOrientation + '-time-remaining').addClass(oldOrientation + '-time-remaining');
-  $('.board-top-engine-eval.' + newOrientation + '-time-used').removeClass(newOrientation + '-time-used').addClass(oldOrientation + '-time-used');
-  $('.board-top-engine-eval.' + newOrientation + '-engine-eval').removeClass(newOrientation + '-engine-eval').addClass(oldOrientation + '-engine-eval');
-  $('#board-top-engine-eval').addClass(oldOrientation + 'Fill');
-  $('#board-top-engine-eval').removeClass(newOrientation + 'Fill');
-  $('#board-bottom-engine-eval').addClass(newOrientation + 'Fill');
-  $('#board-bottom-engine-eval').removeClass(oldOrientation + 'Fill');
+   $('.board-top-engine-eval.' + newOrientation + '-engine-name').removeClass(newOrientation + '-engine-name').addClass(oldOrientation + '-engine-name');
+   $('.board-top-engine-eval.' + newOrientation + '-time-remaining').removeClass(newOrientation + '-time-remaining').addClass(oldOrientation + '-time-remaining');
+   $('.board-top-engine-eval.' + newOrientation + '-time-used').removeClass(newOrientation + '-time-used').addClass(oldOrientation + '-time-used');
+   $('.board-top-engine-eval.' + newOrientation + '-engine-eval').removeClass(newOrientation + '-engine-eval').addClass(oldOrientation + '-engine-eval');
+   $('#board-top-engine-eval').addClass(oldOrientation + 'Fill');
+   $('#board-top-engine-eval').removeClass(newOrientation + 'Fill');
+   $('#board-bottom-engine-eval').addClass(newOrientation + 'Fill');
+   $('#board-bottom-engine-eval').removeClass(oldOrientation + 'Fill');
 
-  setInfoFromCurrentHeaders();
-  handlePlyChange(false);
+   setInfoFromCurrentHeaders();
+   handlePlyChange(false);
 
-  e.preventDefault();
+   e.preventDefault();
 
-  return false;
+   return false;
 });
 
 function handlePlyChange(handleclick)
@@ -1540,6 +1526,7 @@ function handlePlyChange(handleclick)
                if (parseInt(livePVHist[yy].moves[xx].ply) == activePly)
                {
                   livePVHist[yy].moves[xx].engine = livePVHist[yy].engine;
+                  plog ("XXX: updating live data:" + activePly, 0);
                   updateLiveEvalData(livePVHist[yy].moves[xx], 0, prevMove.fen, yy, 0);
                   break;
                }
@@ -1550,7 +1537,7 @@ function handlePlyChange(handleclick)
 
    /* Arun: why do we need to keep swappging the pieces captured */
    if (typeof currentMove != 'undefined') {
-    setMoveMaterial(currentMove.material, 0);
+      setMoveMaterial(currentMove.material, 0);
    }
 
    updateMoveValues(whiteToPlay, whiteEval, blackEval);
@@ -1577,48 +1564,50 @@ $(document).on('click', '.set-pv-board', function(e) {
       }
    }
 
-  activePvColor = pvColor;
+   activePvColor = pvColor;
 
-  if (pvColor == 'white') {
-    activePv = whitePv.slice();
-    setPvFromKey(moveKey, pvColor);
-  } else if (pvColor == 'black') {
-    activePv = blackPv.slice();
-    setPvFromKey(moveKey, pvColor);
-  } else {
-    liveKey = $(this).attr('engine');
-    plog ("liveKey is :" + liveKey);
-    activePv = livePvs[liveKey];
-    setPvFromKey(moveKey, pvColor, activePv);
-    // pvBoard.orientation('white');
-  }
+   if (pvColor == 'white') {
+      activePv = whitePv.slice();
+      setPvFromKey(moveKey, pvColor);
+   } else if (pvColor == 'black') {
+      activePv = blackPv.slice();
+      setPvFromKey(moveKey, pvColor);
+   } else {
+      liveKey = $(this).attr('engine');
+      plog ("xxx: liveKey is :" + liveKey, 0);
+      activePv = livePvs[liveKey];
+      console.log ("XXX: livePVHist[yy].moves[xx]:" + strx(livePVHist), 0);
+      console.log ("XXX: livePVHist[yy].moves[xx]:" + activePv[moveKey].fen, 0);
+      setPvFromKey(moveKey, pvColor, activePv);
+      // pvBoard.orientation('white');
+   }
 
-  e.preventDefault();
+   e.preventDefault();
 
-  return false;
+   return false;
 });
 
 function setActiveKey(pvColor, value)
 {
-    if (pvColor == undefined || pvColor == 'white')
-    {
+   if (pvColor == undefined || pvColor == 'white')
+   {
       activePvKey[0] = value;
-    }
-    else if (pvColor == 'black')
-    {
-       activePvKey[1] = value;
-    }
-    else if (pvColor == 'live')
-    {
-       activePvKey[2] = value;
-       plog ("setting live to:" + value, 1);
-    }
+   }
+   else if (pvColor == 'black')
+   {
+      activePvKey[1] = value;
+   }
+   else if (pvColor == 'live')
+   {
+      activePvKey[2] = value;
+      plog ("setting live to:" + value, 1);
+   }
 }
 
 function scrollDiv(container, element)
 {
    $(container).scrollTop(
-         $(element).offset().top - $(container).offset().top + $(container).scrollTop()
+      $(element).offset().top - $(container).offset().top + $(container).scrollTop()
       );
 }
 
@@ -1626,47 +1615,47 @@ var choosePv;
 
 function setPvFromKey(moveKey, pvColor, choosePvx)
 {
-  var activePv;
+   var activePv;
 
-  if (pvColor == undefined || pvColor == 'white')
-  {
-    activePv  = whitePv.slice();
-  }
-  else if (pvColor == 'black')
-  {
-    activePv  = blackPv.slice();
-    plog ("choosePvx is :" + strx(activePv));
-  }
-  else if (pvColor == 'live')
-  {
-    if (choosePvx != undefined)
-    {
-       activePv = choosePvx;
-       plog ("choosePvx is :" + strx(choosePvx));
-       choosePv = choosePvx;
-    }
-    else
-    {
-       activePv = choosePv;
-       plog ('live choseny:' + activePv.length + " ,moveKey:" + moveKey, 1);
-    }
-  }
+   if (pvColor == undefined || pvColor == 'white')
+   {
+      activePv  = whitePv.slice();
+   }
+   else if (pvColor == 'black')
+   {
+      activePv  = blackPv.slice();
+      plog ("choosePvx is :" + strx(activePv));
+   }
+   else if (pvColor == 'live')
+   {
+      if (choosePvx != undefined)
+      {
+         activePv = choosePvx;
+         plog ("choosePvx is :" + strx(choosePvx));
+         choosePv = choosePvx;
+      }
+      else
+      {
+         activePv = choosePv;
+         plog ('live choseny:' + activePv.length + " ,moveKey:" + moveKey, 1);
+      }
+   }
 
-  if (activePv.length < 1) {
-    setActiveKey(pvColor, 0);
-    return;
-  }
+   if (activePv.length < 1) {
+      setActiveKey(pvColor, 0);
+      return;
+   }
 
-  if (moveKey >= activePv.length) {
-     return;
-     }
-  setActiveKey(pvColor, moveKey);
+   if (moveKey >= activePv.length) {
+      return;
+   }
+   setActiveKey(pvColor, moveKey);
 
-  moveFromPv = activePv[moveKey].from;
-  moveToPv = activePv[moveKey].to;
-  fen = activePv[moveKey].fen;
-  game.load(fen);
-  var pvBoardElbL = null;
+   moveFromPv = activePv[moveKey].from;
+   moveToPv = activePv[moveKey].to;
+   fen = activePv[moveKey].fen;
+   game.load(fen);
+   var pvBoardElbL = null;
 
    $('.active-pv-move').removeClass('active-pv-move');
    if (pvColor == 'white')
@@ -1718,115 +1707,115 @@ function setPvFromKey(moveKey, pvColor, choosePvx)
       moveToPvL = moveToPv;
    }
 
-  if (pvBoardElbL == null)
-  {
-     return;
-  }
-  analysFen = fen;
-  pvBoardElbL.find('.' + squareClass).removeClass(highlightClassPv);
-  pvBoardElbL.find('.square-' + moveFromPv).addClass(highlightClassPv);
-  pvBoardElbL.find('.square-' + moveToPv).addClass(highlightClassPv);
-  pvSquareToHighlight = moveToPv;
+   if (pvBoardElbL == null)
+   {
+      return;
+   }
+   analysFen = fen;
+   pvBoardElbL.find('.' + squareClass).removeClass(highlightClassPv);
+   pvBoardElbL.find('.square-' + moveFromPv).addClass(highlightClassPv);
+   pvBoardElbL.find('.square-' + moveToPv).addClass(highlightClassPv);
+   pvSquareToHighlight = moveToPv;
 
-  pvBoardL.position(fen, false);
-  if (pvColor == 'white')
-  {
-     pvBoardL = pvBoardwc;
-     pvBoardElbL = pvBoardElwc;
-     pvBoardElbL.find('.' + squareClass).removeClass(highlightClassPv);
-     pvBoardElbL.find('.square-' + moveFromPv).addClass(highlightClassPv);
-     pvBoardElbL.find('.square-' + moveToPv).addClass(highlightClassPv);
-     pvBoardL.position(fen, false);
-  }
-  if (pvColor == 'black')
-  {
-     pvBoardL = pvBoardbc;
-     pvBoardElbL = pvBoardElbc;
-     pvBoardElbL.find('.' + squareClass).removeClass(highlightClassPv);
-     pvBoardElbL.find('.square-' + moveFromPv).addClass(highlightClassPv);
-     pvBoardElbL.find('.square-' + moveToPv).addClass(highlightClassPv);
-     pvBoardL.position(fen, false);
-  }
+   pvBoardL.position(fen, false);
+   if (pvColor == 'white')
+   {
+      pvBoardL = pvBoardwc;
+      pvBoardElbL = pvBoardElwc;
+      pvBoardElbL.find('.' + squareClass).removeClass(highlightClassPv);
+      pvBoardElbL.find('.square-' + moveFromPv).addClass(highlightClassPv);
+      pvBoardElbL.find('.square-' + moveToPv).addClass(highlightClassPv);
+      pvBoardL.position(fen, false);
+   }
+   if (pvColor == 'black')
+   {
+      pvBoardL = pvBoardbc;
+      pvBoardElbL = pvBoardElbc;
+      pvBoardElbL.find('.' + squareClass).removeClass(highlightClassPv);
+      pvBoardElbL.find('.square-' + moveFromPv).addClass(highlightClassPv);
+      pvBoardElbL.find('.square-' + moveToPv).addClass(highlightClassPv);
+      pvBoardL.position(fen, false);
+   }
 }
 
 $('#pv-board-black').click(function(e) {
-  activePv = blackPv;
-  setPvFromKey(0, 'live', blackPv);
-  e.preventDefault();
-  return false;
+   activePv = blackPv;
+   setPvFromKey(0, 'live', blackPv);
+   e.preventDefault();
+   return false;
 });
 
 $('#pv-board-white').click(function(e) {
-  activePv = whitePv;
-  setPvFromKey(0, 'live', whitePv);
-  e.preventDefault();
-  return false;
+   activePv = whitePv;
+   setPvFromKey(0, 'live', whitePv);
+   e.preventDefault();
+   return false;
 });
 
 $('#pv-board-live1').click(function(e) {
-  setPvFromKey(0, 'live', livePvs[1]);
-  e.preventDefault();
-  return false;
+   setPvFromKey(0, 'live', livePvs[1]);
+   e.preventDefault();
+   return false;
 });
 
 $('#pv-board-live2').click(function(e) {
-  setPvFromKey(0, 'live', livePvs[2]);
-  e.preventDefault();
-  return false;
+   setPvFromKey(0, 'live', livePvs[2]);
+   e.preventDefault();
+   return false;
 });
 
 $('#pv-board-to-first').click(function(e) {
-  setPvFromKey(0, 'live');
-  e.preventDefault();
-  return false;
+   setPvFromKey(0, 'live');
+   e.preventDefault();
+   return false;
 });
 
 $('#pv-board-previous').click(function(e) {
-  if (activePvKey[2] > 0) {
-    setPvFromKey(activePvKey[2] - 1, 'live');
-  }
-  e.preventDefault();
+   if (activePvKey[2] > 0) {
+      setPvFromKey(activePvKey[2] - 1, 'live');
+   }
+   e.preventDefault();
 
-  return false;
+   return false;
 });
 
 $('#pv-board-next').click(function(e) {
-  if (activePvKey[2] < choosePv.length) {
-    setPvFromKey(activePvKey[2] + 1, 'live');
-  }
-  e.preventDefault();
+   if (activePvKey[2] < choosePv.length) {
+      setPvFromKey(activePvKey[2] + 1, 'live');
+   }
+   e.preventDefault();
 
-  return false;
+   return false;
 });
 
 $('.pv-board-to-first1').click(function(e) {
-  setPvFromKey(0, 'white');
-  e.preventDefault();
-  return false;
+   setPvFromKey(0, 'white');
+   e.preventDefault();
+   return false;
 });
 
 $('.pv-board-to-first2').click(function(e) {
-  setPvFromKey(0, 'black');
-  e.preventDefault();
-  return false;
+   setPvFromKey(0, 'black');
+   e.preventDefault();
+   return false;
 });
 
 $('.pv-board-previous1').click(function(e) {
-  if (activePvKey[0] > 0) {
-    setPvFromKey(activePvKey[0] - 1, 'white');
-  }
-  e.preventDefault();
+   if (activePvKey[0] > 0) {
+      setPvFromKey(activePvKey[0] - 1, 'white');
+   }
+   e.preventDefault();
 
-  return false;
+   return false;
 });
 
 $('.pv-board-previous2').click(function(e) {
-  if (activePvKey[1] > 0) {
-    setPvFromKey(activePvKey[1] - 1, 'black');
-  }
-  e.preventDefault();
+   if (activePvKey[1] > 0) {
+      setPvFromKey(activePvKey[1] - 1, 'black');
+   }
+   e.preventDefault();
 
-  return false;
+   return false;
 });
 
 var isPvAutoplay = [];
@@ -1834,131 +1823,131 @@ isPvAutoplay[1] = false;
 isPvAutoplay[0] = false;
 
 $('.pv-board-autoplay1').click(function(e) {
-  if (isPvAutoplay[0]) {
-    isPvAutoplay[0] = false;
-    $('.pv-board-autoplay1 i').removeClass('fa-pause');
-    $('.pv-board-autoplay1 i').addClass('fa-play');
-  } else {
-    isPvAutoplay[0] = true;
-    $('.pv-board-autoplay1 i').removeClass('fa-play')
-    $('.pv-board-autoplay1 i').addClass('fa-pause');
-    pvBoardautoplay(0, 'white', whitePv);
-  }
-  e.preventDefault();
+   if (isPvAutoplay[0]) {
+      isPvAutoplay[0] = false;
+      $('.pv-board-autoplay1 i').removeClass('fa-pause');
+      $('.pv-board-autoplay1 i').addClass('fa-play');
+   } else {
+      isPvAutoplay[0] = true;
+      $('.pv-board-autoplay1 i').removeClass('fa-play')
+      $('.pv-board-autoplay1 i').addClass('fa-pause');
+      pvBoardautoplay(0, 'white', whitePv);
+   }
+   e.preventDefault();
 
-  return false;
+   return false;
 });
 
 $('.pv-board-autoplay2').click(function(e) {
-  if (isPvAutoplay[1]) {
-    isPvAutoplay[1] = false;
-    $('.pv-board-autoplay2 i').removeClass('fa-pause');
-    $('.pv-board-autoplay2 i').addClass('fa-play');
-  } else {
-    isPvAutoplay[1] = true;
-    $('.pv-board-autoplay2 i').removeClass('fa-play')
-    $('.pv-board-autoplay2 i').addClass('fa-pause');
-    pvBoardautoplay(1, 'black', blackPv);
-  }
-  e.preventDefault();
+   if (isPvAutoplay[1]) {
+      isPvAutoplay[1] = false;
+      $('.pv-board-autoplay2 i').removeClass('fa-pause');
+      $('.pv-board-autoplay2 i').addClass('fa-play');
+   } else {
+      isPvAutoplay[1] = true;
+      $('.pv-board-autoplay2 i').removeClass('fa-play')
+      $('.pv-board-autoplay2 i').addClass('fa-pause');
+      pvBoardautoplay(1, 'black', blackPv);
+   }
+   e.preventDefault();
 
-  return false;
+   return false;
 });
 
 //hack
 
 function pvBoardautoplay(value, color, activePv)
 {
-  if (isPvAutoplay[value] && activePvKey[value] >= 0 && activePvKey[value] < activePv.length - 1) {
-    setPvFromKey(activePvKey[value] + 1, color);
-    setTimeout(function() { pvBoardautoplay(value, color, activePv); }, 750);
-  } else {
-    isPvAutoplay[value] = false;
-    if (value == 0)
-    {
-       $('.pv-board-autoplay1 i').removeClass('fa-pause');
-       $('.pv-board-autoplay1 i').addClass('fa-play');
-    }
-    else
-    {
-       $('.pv-board-autoplay2 i').removeClass('fa-pause');
-       $('.pv-board-autoplay2 i').addClass('fa-play');
-    }
-  }
+   if (isPvAutoplay[value] && activePvKey[value] >= 0 && activePvKey[value] < activePv.length - 1) {
+      setPvFromKey(activePvKey[value] + 1, color);
+      setTimeout(function() { pvBoardautoplay(value, color, activePv); }, 750);
+   } else {
+      isPvAutoplay[value] = false;
+      if (value == 0)
+      {
+         $('.pv-board-autoplay1 i').removeClass('fa-pause');
+         $('.pv-board-autoplay1 i').addClass('fa-play');
+      }
+      else
+      {
+         $('.pv-board-autoplay2 i').removeClass('fa-pause');
+         $('.pv-board-autoplay2 i').addClass('fa-play');
+      }
+   }
 }
 
 $('.pv-board-next1').click(function(e) {
-  if (activePvKey[0] < whitePv.length) {
-    setPvFromKey(activePvKey[0] + 1, 'white');
-  }
-  e.preventDefault();
-  return false;
+   if (activePvKey[0] < whitePv.length) {
+      setPvFromKey(activePvKey[0] + 1, 'white');
+   }
+   e.preventDefault();
+   return false;
 });
 
 $('.pv-board-next2').click(function(e) {
-  if (activePvKey[1] < blackPv.length) {
-    setPvFromKey(activePvKey[1] + 1, 'black');
-  }
-  e.preventDefault();
-  return false;
+   if (activePvKey[1] < blackPv.length) {
+      setPvFromKey(activePvKey[1] + 1, 'black');
+   }
+   e.preventDefault();
+   return false;
 });
 
 $('.pv-board-to-last1').click(function(e) {
-  setPvFromKey(whitePv.length - 1, 'white');
-  e.preventDefault();
-  return false;
+   setPvFromKey(whitePv.length - 1, 'white');
+   e.preventDefault();
+   return false;
 });
 
 $('.pv-board-to-last2').click(function(e) {
-  setPvFromKey(blackPv.length - 1, 'black');
-  e.preventDefault();
-  return false;
+   setPvFromKey(blackPv.length - 1, 'black');
+   e.preventDefault();
+   return false;
 });
 
 $('.pv-board-reverse1').click(function(e) {
-  pvBoardw.flip();
-  pvBoardwc.flip();
-  e.preventDefault();
-  return false;
+   pvBoardw.flip();
+   pvBoardwc.flip();
+   e.preventDefault();
+   return false;
 });
 
 $('.pv-board-reverse2').click(function(e) {
-  pvBoardb.flip();
-  pvBoardbc.flip();
-  e.preventDefault();
-  return false;
+   pvBoardb.flip();
+   pvBoardbc.flip();
+   e.preventDefault();
+   return false;
 });
 
 $('#pv-board-reverse').click(function(e) {
-  pvBoarda.flip();
-  e.preventDefault();
-  return false;
+   pvBoarda.flip();
+   e.preventDefault();
+   return false;
 });
 
 function setMoveMaterial(material, whiteToPlay)
 {
-  _.forOwn(material, function(value, key) {
-    setPieces(key, value, whiteToPlay);
-  })
+   _.forOwn(material, function(value, key) {
+      setPieces(key, value, whiteToPlay);
+   })
 }
 
 function setPieces(piece, value, whiteToPlay) {
-  var target = 'black-material';
-  var color = 'b';
-  if ((whiteToPlay && value < 0) || (!whiteToPlay && value > 0)) {
-    target = 'white-material';
-    color = 'w';
-  }
+   var target = 'black-material';
+   var color = 'b';
+   if ((whiteToPlay && value < 0) || (!whiteToPlay && value > 0)) {
+      target = 'white-material';
+      color = 'w';
+   }
 
-  value = Math.abs(value);
+   value = Math.abs(value);
 
-  $('#white-material span.' + piece).html('');
-  $('#black-material span.' + piece).html('');
+   $('#white-material span.' + piece).html('');
+   $('#black-material span.' + piece).html('');
 
-  for (i = 0; i < value; i++) {
-    imgPath = 'img/chesspieces/wikipedia/' + color + piece.toUpperCase() + '.png';
-    $('#' + target + ' span.' + piece).append('<img src="' + imgPath + '" class="engine-material" />');
-  }
+   for (i = 0; i < value; i++) {
+      imgPath = 'img/chesspieces/wikipedia/' + color + piece.toUpperCase() + '.png';
+      $('#' + target + ' span.' + piece).append('<img src="' + imgPath + '" class="engine-material" />');
+   }
 }
 
 function getLinkArch()
@@ -2054,7 +2043,7 @@ function crossFormatter(value, row, index, field) {
          retStr += '<br />';
       }
    });
-  return retStr;
+   return retStr;
 }
 
 function formatter(value, row, index, field) {
@@ -2095,7 +2084,7 @@ function formatter(value, row, index, field) {
          retStr += '<br />';
       }
    });
-  return retStr;
+   return retStr;
 }
 
 function crossCellformatter(value, row, index, field)
@@ -2127,7 +2116,7 @@ function getRating(engine, engName)
       engNameL = engName;
    }
 
-   _.each(engGlobData.ratings, function(engine, key) {
+   _.each(engineRatingGlobalData.ratings, function(engine, key) {
       if (engNameL == engine.name)
       {
          elo = engine.elo;
@@ -2173,7 +2162,7 @@ function getOverallElo(data)
 
    _.each(crosstableData.Table, function(engine, key) {
       engine.Rating = getRating(engine, key);
-      });
+   });
 
    _.each(crosstableData.Table, function(engine, key) {
       eloDiff = 0;
@@ -2204,17 +2193,17 @@ function getOverallElo(data)
          blackEngine.Rating = blackRating;
       });
       engine.Rating = engine.OrigRating;
-      engine.eloDiff = eloDiff;
+      engine.elo = eloDiff;
       plog ("Final eloDiff: " + eloDiff + " ,fscore: " + parseInt(engine.Rating + eloDiff), 1);
    });
 }
 
 function sleep(ms)
 {
-  return new Promise(resolve => setTimeout(resolve, ms));
+   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-var crash_re = /^(?:TCEC|Syzygy|TB pos|in progress|(?:White|Black) mates|Stale|Insuff|Fifty|3-[fF]old)/; // All possible valid terminations (hopefully).
+var crash_re = /^(?:TCEC|Syzygy|TB pos|.*to be resumed|in progress|(?:White|Black) resigns|(?:White|Black) mates|Stale|Insuff|Fifty|3-[fF]old)/; // All possible valid terminations (hopefully).
 
 function getEngRecSched(data, engineName)
 {
@@ -2367,50 +2356,74 @@ function eliminateCrash(data)
    });
 }
 
+function getScoreText(strText)
+{
+   var blackScore = 0;
+   var whiteScore = 0;
+
+   for (var i = 0; i < strText.length; i++)
+   {
+      if (strText.charAt(i) == '0')
+      {
+         blackScore = blackScore + 1;
+      }
+      else if (strText.charAt(i) == '1')
+      {
+         whiteScore = whiteScore + 1;
+      }
+      else if (strText.charAt(i) == '=')
+      {
+         blackScore = blackScore + 0.5;
+         whiteScore = whiteScore + 0.5;
+      }
+   }
+   return {"w":whiteScore, "b": blackScore};
+}
+
 function updateScoreHeadersData()
 {
-   var data = crosstableData;
-   whiteScore = 0;
-   blackScore = 0;
-
-   _.each(crosstableData.Table, function(engine, key) {
-      _.each(engine.Results, function(oppEngine, oppkey)
+   if (!crosstableData)
+   {
+      if (h2hScoreRetryCount < 10)
       {
-         if (whiteEngineFull != null && key == whiteEngineFull)
-         {
-            if (oppkey == blackEngineFull)
-            {
-               $('#white-engine-elo').html(data.Table[key].Rating);
-               $('#black-engine-elo').html(data.Table[oppkey].Rating);
-               var strText = oppEngine.Text;
-               for (var i = 0; i < strText.length; i++)
-               {
-                  plog ("strText.charAt(i): " + strText.charAt(i), 1);
-                  plog ("Whitescore: " + whiteScore + ", blakcScore:" + blackScore + ",oppEngine.Text:" + oppEngine.Text, 1);
-                  if (strText.charAt(i) == '0')
-                  {
-                     blackScore = blackScore + 1;
-                  }
-                  else if (strText.charAt(i) == '1')
-                  {
-                     whiteScore = whiteScore + 1;
-                  }
-                  else if (strText.charAt(i) == '=')
-                  {
-                     blackScore = blackScore + 0.5;
-                     whiteScore = whiteScore + 0.5;
-                  }
-               }
-               $('.white-engine-score').html(whiteScore.toFixed(1));
-               $('.black-engine-score').html(blackScore.toFixed(1));
-            }
-         }
-      });
-   });
-   plog ("Updated png elo:, whiteEngineFull:" + whiteEngineFull + " ,blackEngineFull:" + blackEngineFull, 0);
+         setTimeout(function() { updateScoreHeadersData(); }, 5000);
+         plog ("H2h score did not get updated:" + h2hScoreRetryCount, 0);
+         h2hScoreRetryCount = h2hScoreRetryCount + 1;
+         return;
+      }
+   }
 
-   prevwhiteEngineFull = whiteEngineFull;
-   prevblackEngineFull = blackEngineFull;
+   if ((crosstableData.whiteCurrent === whiteEngineFull) &&
+      (crosstableData.blackCurrent === blackEngineFull))
+   {
+      return;
+   }
+
+   plog ("H2H scores updated", 0);
+
+   var scores = {};
+   var whiteRes = crosstableData.Table[whiteEngineFull];
+   var blackRes = crosstableData.Table[blackEngineFull];
+   var whiteDiv = $("#white-engine-elo");
+   var blackDiv = $("#black-engine-elo");
+   var whiteSc = $(".white-engine-score");
+   var blackSc = $(".black-engine-score");
+
+   if (whiteRes.Rating)
+   {
+      whiteDiv.html(whiteRes.Rating);
+      scores = getScoreText(crosstableData.Table[whiteEngineFull].Results[blackEngineFull].Text);
+      whiteSc.html(scores.w.toFixed(1));
+      blackSc.html(scores.b.toFixed(1));
+   }
+
+   if (blackRes.Rating)
+   {
+      blackDiv.html(blackRes.Rating);
+   }
+
+   crosstableData.whiteCurrent = whiteEngineFull;
+   crosstableData.blackCurrent = blackEngineFull;
 
    return 0;
 }
@@ -2426,7 +2439,7 @@ function fixOrder()
       arr [count] = engine.Score;
       count = count + 1;
       engine.Rank = 0;
-      });
+   });
 
    var sorted = arr.slice().sort(function(a,b){return b-a})
    var ranks = arr.slice().map(function(v){ return sorted.indexOf(v)+1 });
@@ -2437,7 +2450,7 @@ function fixOrder()
    _.each(crosstableData.Table, function(engine, key) {
       engine.Rank = ranks[count];
       count = count + 1;
-      });
+   });
 
    count = 0;
    _.each(crosstableData.Table, function(engine, key) {
@@ -2501,13 +2514,13 @@ function fixOrder()
             }
          }
       });
-      tiePoints = tiePoints + engine.Wins/(100 * 100);
+      tiePoints = tiePoints + (engine.WinsAsBlack + engine.WinsAsWhite)/(100 * 100);
+      plog ("tiePoints is :" + tiePoints + ", count is :" + arr[count] + " , name is :" + key + ", score:" + engine.Score, debug);
       //tiePoints = tiePoints + engine.WinAsBlack/(100 * 100 * 100);
       tiePoints = tiePoints + engine.Neustadtl/(100 * 100 * 1000);
       tiePoints = tiePoints + engine.Rating/(100 * 100 * 1000 * 1000);
       tiePoints = tiePoints + count/(100 * 100 * 1000 * 1000 * 1000);
       arr[count] = parseFloat(parseFloat(engine.Score) + parseFloat(tiePoints/10));
-      plog ("tiePoints is :" + tiePoints + ", count is :" + arr[count] + " , name is :" + key + ", score:" + engine.Score, debug);
       count = count + 1;
    });
 
@@ -2520,196 +2533,164 @@ function fixOrder()
 
    _.each(crosstableData.Table, function(engine, key) {
       engine.Rank = ranks[count];
-      plog ("engine.Rank-1 is :" + ranks[count] + " ,count:" + count, debug);
+      plog ("engine.Rank-1 is :" + ranks[count] + " ,count:" + count, 1);
       count = count + 1;
       crosstableData.Order[engine.Rank-1] = key;
-      });
+   });
+}
+function getImg(engine)
+{
+   return('<div class="right-align"><img class="right-align-pic" src="img/engines/'+ getShortEngineName(engine) +'.jpg" />' + '<a class="right-align-name">' + engine + '</a></div>');
 }
 
-async function updateCrosstableData(data)
+function getEloDiff(engine, ratings)
+{
+   var elodiff = 0;
+   try {
+      if (engineRatingGlobalData && engineRatingGlobalData[engine].elo) {
+         elodiff = engineRatingGlobalData[engine].elo - ratings; 
+      }
+   }
+   catch (err) {
+      elodiff = 0;
+   }
+
+   return elodiff;
+}
+
+function updateCrosstableDataMain(data)
 {
    crosstableData = data;
+   updateCrosstableData();
+}
+
+async function updateCrosstableData()
+{
    plog ("Updating crosstable:", 0);
    var abbreviations = [];
    var standings = [];
-   var sleepCount = 0;
-   var retryScore = 0;
 
-   while (oldSchedData == null)
-   {
-      sleepCount = sleepCount + 1;
-      await sleep(500);
-      if (sleepCount > 20)
-      {
-         break;
-      }
+   if (tcecElo) {
+      getOverallElo();
    }
-
-   eliminateCrash(oldSchedData);
-
-   if (tcecElo)
-   {
-      getOverallElo(data);
-   }
-
-   _.each(crosstableData.Order, function(engine, key) {
-      engineDetails = _.get(crosstableData.Table, engine);
-      var getEngRes = getEngRecSched(oldSchedData, engine);
-      wins = (getEngRes.WinAsWhite + getEngRes.WinAsBlack);
-      var loss = 0;
-      if (getEngRes)
-      {
-         loss = (getEngRes.LossAsWhite + getEngRes.LossAsBlack);
-      }
-      engineDetails.Score = getEngRes.Score;
-      engineDetails.Strikes = getEngRes.LossAsStrike;
-      engineDetails.Wins = wins;
-      engineDetails.WinAsBlack = getEngRes.WinAsBlack;
-      });
-
    fixOrder();
 
    _.each(crosstableData.Order, function(engine, key) {
       plog ("ADding entry:" + engine, 1);
       engineDetails = _.get(crosstableData.Table, engine);
-      var getEngRes = getEngRecSched(oldSchedData, engine);
-      wins = (getEngRes.WinAsWhite + getEngRes.WinAsBlack);
-      var loss = 0;
-      if (getEngRes)
+      engineDetails.LossAsWhite = engineDetails.GamesAsWhite - engineDetails.WinsAsWhite;
+      engineDetails.LossAsBlack = 0;
+      engineDetails.LossAsWhite = 0;
+      if (oldSchedData)
       {
-         loss = (getEngRes.LossAsWhite + getEngRes.LossAsBlack);
+         var getEngRes = getEngRecSched(oldSchedData, engine);
+         engineDetails.LossAsBlack = getEngRes.LossAsBlack;
+         engineDetails.LossAsWhite = getEngRes.LossAsWhite;
       }
-      if (engineDetails.eloDiff)
-      {
-         plog ("engine.eloDiff is defined:" + engineDetails.eloDiff, 1);
-         elo = Math.round(engineDetails.eloDiff);
-      }
-      else
-      {
-         elo = Math.round(engineDetails.Elo);
-      }
-      eloDiff = engineDetails.Rating + elo;
-      var dQ = engineDisqualified(engine);
-      if (dQ)
-      {
-         engine = '<div class="right-align strike"><img class="right-align-pic" src="img/engines/'+ getShortEngineName(engine) +'.jpg" />' + '<a class="right-align-name">' + engine + '</a></div>';
-      }
-      else
-      {
-         engine = '<div class="right-align"><img class="right-align-pic" src="img/engines/'+ getShortEngineName(engine) +'.jpg" />' + '<a class="right-align-name">' + engine + '</a></div>';
-      }
-      wins = wins + ' [' + getEngRes.WinAsWhite + '/' + getEngRes.WinAsBlack + ']';
-      //loss = loss + ' [' + getEngRes.LossAsWhite + '/' + getEngRes.LossAsBlack + '/' + getEngRes.LossAsStrike + ']';
-      loss = loss + ' [' + getEngRes.LossAsWhite + '/' + getEngRes.LossAsBlack + ']';
-      engineDetails.Score = getEngRes.Score;
-      if (dQ)
-      {
-         engineDetails.Neustadtl = 0;
-      }
-
+      var eloDiff = getEloDiff(engine, engineDetails.Rating);
       var entry = {
          rank: engineDetails.Rank,
-         name: engine,
-         games: getEngRes.Games,
-         points: getEngRes.Score,
-         wins: wins,
-         loss: loss,
-         crashes: engineDetails.OrigStrikes ? engineDetails.OrigStrikes : engineDetails.Strikes,
+         name: getImg(engine),
+         games: engineDetails.Games,
+         points: engineDetails.Score,
+         wins: engineDetails.WinsAsBlack + engineDetails.WinsAsWhite + ' [' + engineDetails.WinsAsWhite + '/' + engineDetails.WinsAsBlack + ']',
+         loss: engineDetails.LossAsWhite + engineDetails.LossAsBlack + ' [' + engineDetails.LossAsWhite + '/' + engineDetails.LossAsBlack + ']',
+         crashes: engineDetails.Strikes,
          sb: parseFloat(engineDetails.Neustadtl).toFixed(2),
          elo: engineDetails.Rating,
-         elo_diff: elo + ' [' + eloDiff + ']'
-         };
-        standings = _.union(standings, [entry]);
-      });
+         elo_diff: Math.round(eloDiff) + ' [' + (Math.round(eloDiff) + Math.round(engineDetails.Rating)) + ']'
+      };
+
+      standings = _.union(standings, [entry]);
+   });
 
    if (!crossTableInitialized) {
-     columns = [
-       {
+      columns = [
+      {
          field: 'rank',
          title: 'Rank'
-        ,sortable: true
-        ,width: '4%'
-        ,cellStyle: crossCellformatter
-       },
-       {
+         ,sortable: true
+         ,width: '4%'
+         ,cellStyle: crossCellformatter
+      },
+      {
          field: 'name',
          title: 'Engine'
-        ,sortable: true
-        ,width: '28%'
-        ,cellStyle: crossCellformatter
-       },
-       {
+         ,sortable: true
+         ,width: '28%'
+         ,cellStyle: crossCellformatter
+      },
+      {
          field: 'games',
          title: '# Games'
-        ,sortable: true
-        ,width: '4%'
-        ,cellStyle: crossCellformatter
-       },
-       {
+         ,sortable: true
+         ,width: '4%'
+         ,cellStyle: crossCellformatter
+      },
+      {
          field: 'points',
          title: 'Points'
-        ,sortable: true
-        ,width: '7%'
-        ,cellStyle: crossCellformatter
-       },
-       {
+         ,sortable: true
+         ,width: '7%'
+         ,cellStyle: crossCellformatter
+      },
+      {
          field: 'crashes',
          title: 'Crashes'
-        ,sortable: true
-        ,width: '4%'
-        ,cellStyle: crossCellformatter
-       },
-       {
+         ,sortable: true
+         ,width: '4%'
+         ,cellStyle: crossCellformatter
+      },
+      {
          field: 'wins',
          title: 'Wins [W/B]'
-        ,width: '10%'
-        ,cellStyle: crossCellformatter
-       },
-       {
+         ,width: '10%'
+         ,cellStyle: crossCellformatter
+      },
+      {
          field: 'loss',
          title: 'Loss [W/B]'
-        ,width: '10%'
-        ,cellStyle: crossCellformatter
-       },
-       {
+         ,width: '10%'
+         ,cellStyle: crossCellformatter
+      },
+      {
          field: 'sb',
          title: 'SB'
-        ,sortable: true
-        ,cellStyle: crossCellformatter
-        ,width: '4%'
-       },
-       {
+         ,sortable: true
+         ,cellStyle: crossCellformatter
+         ,width: '4%'
+      },
+      {
          field: 'elo',
          title: 'Elo'
-        ,cellStyle: crossCellformatter
-        ,sortable: true
-        ,width: '5%'
-       },
-       {
+         ,cellStyle: crossCellformatter
+         ,sortable: true
+         ,width: '5%'
+      },
+      {
          field: 'elo_diff',
          title: 'Diff [Live]'
-        ,width: '7%'
-        ,cellStyle: crossCellformatter
-       }
-     ];
+         ,width: '7%'
+         ,cellStyle: crossCellformatter
+      }
+      ];
 
-     $('#crosstable').bootstrapTable({
-       classes: 'table table-striped table-no-bordered',
-       columns: columns,
-       sortName: 'rank'
-     });
-     crossTableInitialized = true;
+      $('#crosstable').bootstrapTable({
+         classes: 'table table-striped table-no-bordered',
+         columns: columns,
+         sortName: 'rank'
+      });
+      crossTableInitialized = true;
    }
    $('#crosstable').bootstrapTable('load', standings);
 
-   retryScore = updateScoreHeadersData();
-   oldSchedData = null;
    updateStandtableData(crosstableData);
 }
 
 function updateEngRatingData(data)
 {
-   engGlobData = data;
+   engineRatingGlobalData = data;
+   setTimeout(function() { updateCrosstableData(); }, 3000);
 }
 
 function updateTourInfo(data)
@@ -2748,7 +2729,7 @@ function updateCrosstable()
    axios.get('crosstable.json')
    .then(function (response)
    {
-      updateCrosstableData(response.data);
+      updateCrosstableDataMain(response.data);
    })
    .catch(function (error)
    {
@@ -2767,31 +2748,28 @@ function shallowCopy(data)
    return JSON.parse(JSON.stringify(data));
 }
 
-function updateH2hData(h2hdataip)
+function updateH2hData()
 {
-   if (h2hRetryCount < 10 &&
-       ((prevwhiteEngineFullSc != null &&
-         prevwhiteEngineFullSc == whiteEngineFull) &&
-        (prevblackEngineFullSc != null &&
-         blackEngineFull == prevblackEngineFullSc)))
+   if (!oldSchedData)
    {
-      plog ("H2h did not get updated, lets retry later: prevwhiteEngineFull:" +
-            prevwhiteEngineFullSc +
-            " ,whiteEngineFull:" + whiteEngineFull +
-            " ,h2hRetryCount:" + h2hRetryCount +
-            " ,prevblackEngineFull:" + prevblackEngineFullSc + " ,blackEngineFull:" + blackEngineFull, 0);
-      h2hRetryCount = h2hRetryCount + 1;
-      setTimeout(function() { updateH2hData(h2hdataip); }, 5000);
-      return;
-   }
-   else
-   {
-      plog ("H2h got updated", 0);
+      if (h2hRetryCount < 10)
+      {
+         setTimeout(function() { updateH2hData(); }, 5000);
+         plog ("H2h did not get updated:" + h2hRetryCount, 0);
+         h2hRetryCount = h2hRetryCount + 1;
+         return;
+      }
    }
 
+   if ((oldSchedData.WhiteEngCurrent === whiteEngineFull) &&
+      (oldSchedData.BlackEngCurrent === blackEngineFull))
+   {
+      return;
+   }
+
+   plog ("H2h got updated", 0);
+
    h2hRetryCount = 0;
-   prevwhiteEngineFullSc = whiteEngineFull;
-   prevblackEngineFullSc = blackEngineFull;
 
    var h2hdata = [];
    var prevDate = 0;
@@ -2801,7 +2779,7 @@ function updateH2hData(h2hdataip)
    var timezoneDiff = moment().utcOffset() * 60 * 1000 - 3600 * 1000;
    var h2hrank = 0;
    var schedEntry = {};
-   var data = shallowCopy(h2hdataip);
+   var data = shallowCopy(oldSchedData);
 
    _.each(data, function(engine, key)
    {
@@ -2815,10 +2793,8 @@ function updateH2hData(h2hdataip)
             gameDiff = diff/(engine.Game-1);
          }
          momentDate.add(timezoneDiff);
-         engine.Start = momentDate.format('HH:mm:ss on YYYY.MM.DD');
+         engine.Start = getLocalDate(engine.Start);
          prevDate = momentDate;
-         var CurrentDate1 = moment().unix();
-         var CurrentDate2 = moment(engine.Start, 'HH:mm:ss on YYYY.MM.DD').unix();
          //plog ("diff is :" + (CurrentDate2 - CurrentDate1), 0);
       }
       else
@@ -2855,7 +2831,7 @@ function updateH2hData(h2hdataip)
          }
       }
       if ((engine.Black == blackEngineFull && engine.White == whiteEngineFull) ||
-          (engine.Black == whiteEngineFull && engine.White == blackEngineFull))
+         (engine.Black == whiteEngineFull && engine.White == blackEngineFull))
       {
          engine.h2hrank = engine.Game;
          if (engine.Result != undefined)
@@ -2869,6 +2845,8 @@ function updateH2hData(h2hdataip)
          h2hdata = _.union(h2hdata, [engine]);
       }
    });
+   oldSchedData.WhiteEngCurrent = whiteEngineFull;
+   oldSchedData.BlackEngCurrent = blackEngineFull;
 
    $('#h2h').bootstrapTable('load', h2hdata);
 }
@@ -2886,16 +2864,16 @@ function updateTourStat(data)
    var tinfoData = scheduleToTournamentInfo(scdatainput);
    var gameNox = tinfoData.minMoves[1];
    tinfoData.minMoves = tinfoData.minMoves[0] + ' [' + '<a title="' + gameNox + '" style="cursor:pointer; color: ' +
-                        gameArrayClass[1] + ';"onclick="updateGame(' + gameNox + ')">' + gameNox + '</a>' + ']';
+   gameArrayClass[1] + ';"onclick="updateGame(' + gameNox + ')">' + gameNox + '</a>' + ']';
    gameNox = tinfoData.maxMoves[1];
    tinfoData.maxMoves = tinfoData.maxMoves[0] + ' [' + '<a title="' + gameNox + '" style="cursor:pointer; color: ' +
-                        gameArrayClass[1] + ';"onclick="updateGame(' + gameNox + ')">' + gameNox + '</a>' + ']';
+   gameArrayClass[1] + ';"onclick="updateGame(' + gameNox + ')">' + gameNox + '</a>' + ']';
    gameNox = tinfoData.minTime[1];
    tinfoData.minTime = tinfoData.minTime[0] + ' [' + '<a title="' + gameNox + '" style="cursor:pointer; color: ' +
-                        gameArrayClass[1] + ';"onclick="updateGame(' + gameNox + ')">' + gameNox + '</a>' + ']';
+   gameArrayClass[1] + ';"onclick="updateGame(' + gameNox + ')">' + gameNox + '</a>' + ']';
    gameNox = tinfoData.maxTime[1];
    tinfoData.maxTime = tinfoData.maxTime[0] + ' [' + '<a title="' + gameNox + '" style="cursor:pointer; color: ' +
-                        gameArrayClass[1] + ';"onclick="updateGame(' + gameNox + ')">' + gameNox + '</a>' + ']';
+   gameArrayClass[1] + ';"onclick="updateGame(' + gameNox + ')">' + gameNox + '</a>' + ']';
    var crashes = tinfoData.crashes[1];
    if (crashes.length)
    {
@@ -2946,7 +2924,7 @@ function updateScheduleData(scdatainput)
             gameDiff = diff/(engine.Game-1);
          }
          momentDate.add(timezoneDiff);
-         engine.Start = momentDate.format('HH:mm:ss on YYYY.MM.DD');
+         engine.Start = getLocalDate(engine.Start);
          prevDate = momentDate;
       }
       else
@@ -3002,8 +2980,8 @@ function scheduleHighlight(noscroll)
    $('#schedule').find('tbody tr').each(function (i) {
       if (i < index) {
          top += $(this).height();
-         }
-      });
+      }
+   });
    if (!darkMode)
    {
       classSet = 'whitetds';
@@ -3037,35 +3015,34 @@ function updateWinnersData(winnerData)
 
 function updateWinners()
 {
-    axios.get('winners.json')
-    .then(function (response)
-    {
+   axios.get('winners.json')
+   .then(function (response)
+   {
       updateWinnersData(response.data);
-    })
-    .catch(function (error) {
+   })
+   .catch(function (error) {
       // handle error
       plog(error, 0);
-    });
+   });
 }
 
 function updateSchedule()
 {
-    axios.get('schedule.json')
-    .then(function (response)
-    {
+   axios.get('schedule.json')
+   .then(function (response)
+   {
       updateScheduleData(response.data);
-      updateH2hData(response.data);
-    })
-    .catch(function (error) {
+   })
+   .catch(function (error) {
       // handle error
       plog(error, 0);
-    });
+   });
 }
 
 function pad(pad, str) {
-  if (typeof str === 'undefined')
-    return pad;
-  return (pad + str).slice(-pad.length);
+   if (typeof str === 'undefined')
+      return pad;
+   return (pad + str).slice(-pad.length);
 }
 
 var game = new Chess();
@@ -3073,15 +3050,15 @@ var game = new Chess();
 var onDragStart = function(source, piece, position, orientation)
 {
    if (game.game_over() === true ||
-         (game.turn() === 'w' && piece.search(/^b/) !== -1) ||
-         (game.turn() === 'b' && piece.search(/^w/) !== -1))
+      (game.turn() === 'w' && piece.search(/^b/) !== -1) ||
+      (game.turn() === 'b' && piece.search(/^w/) !== -1))
    {
       return false;
    }
 };
 
 var onDragMove = function(newLocation, oldLocation, source,
-                          piece, position, orientation)
+   piece, position, orientation)
 {
    var move = game.move({
       from: newLocation,
@@ -3174,7 +3151,7 @@ function setBoardInit()
    board = drawGivenBoard('board', boardNotation);
 
    if (!boardArrows) {
-    board.clearAnnotation();
+      board.clearAnnotation();
    }
 
    pvBoardw = drawGivenBoard('pv-boardw', boardNotationPv);
@@ -3250,21 +3227,19 @@ function setBoard()
 
 function updateTables()
 {
-  updateEngRating();
-  updateSchedule();
-  standTableInitialized = false;
-  updateCrosstable();
-  updateStandtable();
-  readTourInfo();
+   updateEngRating();
+   updateSchedule();
+   updateCrosstable();
+   readTourInfo();
 }
 
 function setTwitchChatUrl(darkmode)
 {
-  if (darkmode) {
-    $('#chatright').attr('src', twitchChatUrl + '?darkpopout');
-  } else {
-    $('#chatright').attr('src', twitchChatUrl);
-  }
+   if (darkmode) {
+      $('#chatright').attr('src', twitchChatUrl + '?darkpopout');
+   } else {
+      $('#chatright').attr('src', twitchChatUrl);
+   }
 }
 
 function setTwitchBackgroundInit(backg)
@@ -3342,38 +3317,38 @@ function setTwitchBackground(backg)
 
 function setDark()
 {
-  $('.toggleDark').find('i').removeClass('fa-moon');
-  $('.toggleDark').find('i').addClass('fa-sun');
-  $('body').addClass('dark');
-  setTwitchBackground(2);
-  setTwitchChatUrl(true)
-  $('#info-frame').attr('src', 'info.html?body=dark');
-  $('#crosstable').addClass('table-dark');
-  $('#schedule').addClass('table-dark');
-  $('#winner').addClass('table-dark');
-  $('#standtable').addClass('table-dark');
-  $('#infotable').addClass('table-dark');
-  $('#h2h').addClass('table-dark');
-  $('#themecheck').prop('checked', false);
-  setDarkMode(1);
+   $('.toggleDark').find('i').removeClass('fa-moon');
+   $('.toggleDark').find('i').addClass('fa-sun');
+   $('body').addClass('dark');
+   setTwitchBackground(2);
+   setTwitchChatUrl(true)
+   $('#info-frame').attr('src', 'info.html?body=dark');
+   $('#crosstable').addClass('table-dark');
+   $('#schedule').addClass('table-dark');
+   $('#winner').addClass('table-dark');
+   $('#standtable').addClass('table-dark');
+   $('#infotable').addClass('table-dark');
+   $('#h2h').addClass('table-dark');
+   $('#themecheck').prop('checked', false);
+   setDarkMode(1);
 }
 
 function setLight()
 {
-  $('body').removeClass('dark');
-  $('.toggleDark').find('i').addClass('fa-moon');
-  $('.toggleDark').find('i').removeClass('fa-sun');
-  $('input.toggleDark').prop('checked', false);
-  $('#crosstable').removeClass('table-dark');
-  $('#schedule').removeClass('table-dark');
-  setTwitchBackground(1);
-  $('#info-frame').attr('src', 'info.html?body=light');
-  $('#standtable').removeClass('table-dark');
-  $('#winner').removeClass('table-dark');
-  $('#infotable').removeClass('table-dark');
-  $('#h2h').removeClass('table-dark');
-  $('#themecheck').prop('checked', true);
-  setDarkMode(0);
+   $('body').removeClass('dark');
+   $('.toggleDark').find('i').addClass('fa-moon');
+   $('.toggleDark').find('i').removeClass('fa-sun');
+   $('input.toggleDark').prop('checked', false);
+   $('#crosstable').removeClass('table-dark');
+   $('#schedule').removeClass('table-dark');
+   setTwitchBackground(1);
+   $('#info-frame').attr('src', 'info.html?body=light');
+   $('#standtable').removeClass('table-dark');
+   $('#winner').removeClass('table-dark');
+   $('#infotable').removeClass('table-dark');
+   $('#h2h').removeClass('table-dark');
+   $('#themecheck').prop('checked', true);
+   setDarkMode(0);
 }
 
 function setDefaults()
@@ -3451,46 +3426,46 @@ function setEngineColor(color)
 
 function updateLiveEvalInit()
 {
-      $('#live-eval').bootstrapTable({
-          classes: 'table table-striped table-no-bordered',
-          columns: [
-          {
-              field: 'engine',
-              title: 'Eng',
-              width: '30'
-          },
-          {
-              field: 'eval',
-              title: 'Eval',
-              width: '20'
-          },
-          {
-              field: 'pv',
-              title: 'PV',
-              width: '290'
-          },
-          {
-              field: 'depth',
-              title: 'Depth',
-              width: '20'
-          },
-          {
-              field: 'speed',
-              title: 'Speed',
-              width: '20'
-          },
-          {
-              field: 'nodes',
-              title: 'Nodes',
-              width: '20'
-          },
-          {
-              field: 'tbhits',
-              title: 'TB',
-              width: '20'
-          }
-        ]
-      });
+   $('#live-eval').bootstrapTable({
+      classes: 'table table-striped table-no-bordered',
+      columns: [
+      {
+         field: 'engine',
+         title: 'Eng',
+         width: '30'
+      },
+      {
+         field: 'eval',
+         title: 'Eval',
+         width: '20'
+      },
+      {
+         field: 'pv',
+         title: 'PV',
+         width: '290'
+      },
+      {
+         field: 'depth',
+         title: 'Depth',
+         width: '20'
+      },
+      {
+         field: 'speed',
+         title: 'Speed',
+         width: '20'
+      },
+      {
+         field: 'nodes',
+         title: 'Nodes',
+         width: '20'
+      },
+      {
+         field: 'tbhits',
+         title: 'TB',
+         width: '20'
+      }
+      ]
+   });
 }
 
 function updateLiveEvalDataHistory(engineDatum, fen, container, contno)
@@ -3527,39 +3502,39 @@ function updateLiveEvalDataHistory(engineDatum, fen, container, contno)
 
    if (datum.pv.length > 0 && datum.pv.trim() != "no info")
    {
-    var chess = new Chess(fen);
-    var currentFen = fen;
+      var chess = new Chess(fen);
+      var currentFen = fen;
 
-    datum.pv = datum.pv.replace("...", ". .. ");
-    _.each(datum.pv.split(' '), function(move) {
-        if (isNaN(move.charAt(0)) && move != '..') {
-          moveResponse = chess.move(move);
+      datum.pv = datum.pv.replace("...", ". .. ");
+      _.each(datum.pv.split(' '), function(move) {
+         if (isNaN(move.charAt(0)) && move != '..') {
+            moveResponse = chess.move(move);
 
-          if (!moveResponse || typeof moveResponse == 'undefined') {
+            if (!moveResponse || typeof moveResponse == 'undefined') {
                plog("undefine move" + move);
-          } else {
-            currentFen = chess.fen();
-            newPv = {
-              'from': moveResponse.from,
-              'to': moveResponse.to,
-              'm': moveResponse.san,
-              'fen': currentFen
-            };
+            } else {
+               currentFen = chess.fen();
+               newPv = {
+                  'from': moveResponse.from,
+                  'to': moveResponse.to,
+                  'm': moveResponse.san,
+                  'fen': currentFen
+               };
 
-            currentLastMove = move.slice(-2);
+               currentLastMove = move.slice(-2);
 
-            pvs = _.union(pvs, [newPv]);
-          }
-        }
-    });
+               pvs = _.union(pvs, [newPv]);
+            }
+         }
+      });
    }
 
    if (pvs.length > 0) {
-    livePvsC = _.union(livePvsC, [pvs]);
+      livePvsC = _.union(livePvsC, [pvs]);
    }
 
    if (score > 0) {
-    score = '+' + score;
+      score = '+' + score;
    }
 
    datum.eval = score;
@@ -3567,63 +3542,63 @@ function updateLiveEvalDataHistory(engineDatum, fen, container, contno)
    datum.nodes = getNodes(datum.nodes);
 
    if (datum.pv.length > 0 && datum.pv != "no info") {
-    engineData = _.union(engineData, [datum]);
+      engineData = _.union(engineData, [datum]);
    }
 
-  board.clearAnnotation();
-  $(container).html('');
-  _.each(engineData, function(engineDatum) {
-    if (engineDatum.engine == '')
-    {
-       engineDatum.engine = datum.engine;
-    }
+   board.clearAnnotation();
+   $(container).html('');
+   _.each(engineData, function(engineDatum) {
+      if (engineDatum.engine == '')
+      {
+         engineDatum.engine = datum.engine;
+      }
 
-    parseScore = 0.00;
-    if (isNaN(engineDatum.eval)) {
-      parseScore = engineDatum.eval;
-    } else {
-      parseScore = (engineDatum.eval * 1).toFixed(2);
-    }
+      parseScore = 0.00;
+      if (isNaN(engineDatum.eval)) {
+         parseScore = engineDatum.eval;
+      } else {
+         parseScore = (engineDatum.eval * 1).toFixed(2);
+      }
 
-    var evalStr = getPct(engineDatum.engine, parseScore);
-    $(container).append('<h6>' + evalStr + ' PV(A) ' + '</h6><small>[D: ' + engineDatum.depth + ' | TB: ' + engineDatum.tbhits + ' | Sp: ' + engineDatum.speed + ' | N: ' + engineDatum.nodes +']</small>');
-    var moveContainer = [];
-    if (livePvsC.length > 0) {
-      _.each(livePvsC, function(livePv, pvKey) {
-        var moveCount = 0;
-        _.each(engineDatum.pv.split(' '), function(move) {
-          if (isNaN(move.charAt(0)) && move != '..') {
-            pvLocation = livePvsC[pvKey][moveCount];
-            if (pvLocation) {
-               moveContainer = _.union(moveContainer, ["<a href='#' class='set-pv-board' live-pv-key='" + pvKey +
-                                                       "' move-key='" + moveCount +
-                                                       "' engine='" + (contno) +
-                                                       "' color='live'>" + pvLocation.m +
-                                                       '</a>']);
+      var evalStr = getPct(engineDatum.engine, parseScore);
+      $(container).append('<h6>' + evalStr + ' PV(A) ' + '</h6><small>[D: ' + engineDatum.depth + ' | TB: ' + engineDatum.tbhits + ' | Sp: ' + engineDatum.speed + ' | N: ' + engineDatum.nodes +']</small>');
+      var moveContainer = [];
+      if (livePvsC.length > 0) {
+         _.each(livePvsC, function(livePv, pvKey) {
+            var moveCount = 0;
+            _.each(engineDatum.pv.split(' '), function(move) {
+               if (isNaN(move.charAt(0)) && move != '..') {
+                  pvLocation = livePvsC[pvKey][moveCount];
+                  if (pvLocation) {
+                     moveContainer = _.union(moveContainer, ["<a href='#' class='set-pv-board' live-pv-key='" + pvKey +
+                        "' move-key='" + moveCount +
+                        "' engine='" + (contno) +
+                        "' color='live'>" + pvLocation.m +
+                        '</a>']);
+                  }
+                  else
+                  {
+                     plog ("pvlocation not defined");
+                  }
+                  moveCount++;
+               } else {
+                  moveContainer = _.union(moveContainer, [move]);
                }
-            else
-            {
-               plog ("pvlocation not defined");
-            }
-            moveCount++;
-          } else {
-            moveContainer = _.union(moveContainer, [move]);
-          }
-        });
+            });
 
-        if (boardArrows) {
-          if (pvKey == 0) {
-            color = 'blue';
-          } else {
-            color = 'orange';
-          }
-          board.addArrowAnnotation(livePvsC[pvKey][0].from, livePvsC[pvKey][0].to, color, board.orientation());
-        }
-      });
-    }
-    $(container).append('<div class="engine-pv engine-pv-live alert alert-dark">' + moveContainer.join(' ') + '</div>');
-    livePvs[contno] = livePvsC[0];
-  });
+            if (boardArrows) {
+               if (pvKey == 0) {
+                  color = 'blue';
+               } else {
+                  color = 'orange';
+               }
+               board.addArrowAnnotation(livePvsC[pvKey][0].from, livePvsC[pvKey][0].to, color, board.orientation());
+            }
+         });
+      }
+      $(container).append('<div class="engine-pv engine-pv-live alert alert-dark">' + moveContainer.join(' ') + '</div>');
+      livePvs[contno] = livePvsC[0];
+   });
 
    // $('#live-eval').bootstrapTable('load', engineData);
    // handle success
@@ -3636,12 +3611,12 @@ function updateLiveEvalData(datum, update, fen, contno, initial)
 
    if (contno == 1 && !showLivEng1)
    {
-      $(container).html('');
+      $(container).html(''); 
       return;
    }
    if (contno == 2 && !showLivEng2)
    {
-      $(container).html('');
+      $(container).html(''); 
       return;
    }
 
@@ -3754,16 +3729,16 @@ function updateLiveEvalData(datum, update, fen, contno, initial)
     {
        engineDatum.engine = datum.engine;
     }
-
+    
     parseScore = 0.00;
     if (isNaN(engineDatum.eval)) {
       parseScore = engineDatum.eval;
     } else {
       parseScore = (engineDatum.eval * 1).toFixed(2);
     }
-
+   
     var evalStr = getPct(engineDatum.engine, parseScore);
-
+    
     $(container).append('<h6>' + evalStr + ' PV(A) ' + '</h6><small>[D: ' + engineDatum.depth + ' | TB: ' + engineDatum.tbhits + ' | Sp: ' + engineDatum.speed + ' | N: ' + engineDatum.nodes +']</small>');
     var moveContainer = [];
     if (livePvsC.length > 0) {
@@ -3788,7 +3763,7 @@ function updateLiveEvalData(datum, update, fen, contno, initial)
             moveContainer = _.union(moveContainer, [move]);
           }
         });
-
+        
         if (boardArrows) {
           if (pvKey == 0) {
             color = 'blue';
@@ -3810,6 +3785,192 @@ function updateLiveEvalData(datum, update, fen, contno, initial)
     $(container).append('<div class="engine-pv engine-pv-live alert alert-dark">' + moveContainer.join(' ') + '</div>');
     livePvs[contno] = livePvsC[0];
   });
+
+
+   // $('#live-eval').bootstrapTable('load', engineData);
+   // handle success
+}
+
+function updateLiveEvalDataOld(datum, update, fen, contno, initial)
+{
+   var container = '#live-eval-cont' + contno;
+
+   if (contno == 1 && !showLivEng1)
+   {
+      $(container).html('');
+      return;
+   }
+   if (contno == 2 && !showLivEng2)
+   {
+      $(container).html('');
+      return;
+   }
+
+   if (!initial && (contno == 1))
+   {
+      board.clearAnnotation();
+      clearedAnnotation = 1;
+   }
+
+   plog ("Annotation did not get cleared" + clearedAnnotation + ",contno:" + contno, 1);
+   if ((clearedAnnotation < 1) && (contno == 2))
+   {
+      board.clearAnnotation();
+   }
+
+   if (contno == 2)
+   {
+      clearedAnnotation = 0;
+   }
+   var engineData = [];
+   livePvs[contno] = [];
+   var livePvsC = livePvs[contno];
+   var score = 0;
+   var tbhits = datum.tbhits;
+
+   if (update && !viewingActiveMove)
+   {
+      return;
+   }
+
+   if (!update)
+   {
+      updateLiveEvalDataHistory(datum, fen, container, contno);
+      return;
+   }
+
+   if (!isNaN(datum.eval))
+   {
+      score = parseFloat(datum.eval);
+   }
+   else
+   {
+      score = datum.eval;
+   }
+
+   if (datum.pv.search(/.*\.\.\..*/i) == 0)
+   {
+      if (!isNaN(score))
+      {
+         score = parseFloat(score) * -1;
+         if (score === 0)
+         {
+            score = 0;
+         }
+      }
+   }
+
+   pvs = [];
+
+   if (datum.pv.length > 0 && datum.pv.trim() != "no info")
+   {
+      var chess = new Chess(activeFen);
+
+      var currentFen = activeFen;
+
+      datum.pv = datum.pv.replace("...", ". .. ");
+      _.each(datum.pv.split(' '), function(move) {
+         if (isNaN(move.charAt(0)) && move != '..') {
+            moveResponse = chess.move(move);
+
+            if (!moveResponse || typeof moveResponse == 'undefined') {
+               plog("undefine move" + move);
+            } else {
+               currentFen = chess.fen();
+               newPv = {
+                  'from': moveResponse.from,
+                  'to': moveResponse.to,
+                  'm': moveResponse.san,
+                  'fen': currentFen
+               };
+
+               currentLastMove = move.slice(-2);
+
+               pvs = _.union(pvs, [newPv]);
+            }
+         }
+      });
+   }
+
+   if (pvs.length > 0) {
+      livePvsC = _.union(livePvsC, [pvs]);
+   }
+
+   if (score > 0) {
+      score = '+' + score;
+   }
+
+   datum.eval = score;
+   datum.tbhits = getTBHits(datum.tbhits);
+   datum.nodes = getNodes(datum.nodes);
+
+   if (datum.pv.length > 0 && datum.pv != "no info") {
+      engineData = _.union(engineData, [datum]);
+   }
+
+   $(container).html('');
+
+   _.each(engineData, function(engineDatum) {
+      if (engineDatum.engine == '')
+      {
+         engineDatum.engine = datum.engine;
+      }
+
+      parseScore = 0.00;
+      if (isNaN(engineDatum.eval)) {
+         parseScore = engineDatum.eval;
+      } else {
+         parseScore = (engineDatum.eval * 1).toFixed(2);
+      }
+
+      var evalStr = getPct(engineDatum.engine, parseScore);
+
+      $(container).append('<h6>' + evalStr + ' PV(A) ' + '</h6><small>[D: ' + engineDatum.depth + ' | TB: ' + engineDatum.tbhits + ' | Sp: ' + engineDatum.speed + ' | N: ' + engineDatum.nodes +']</small>');
+      var moveContainer = [];
+      if (livePvsC.length > 0) {
+         _.each(livePvsC, function(livePv, pvKey) {
+            var moveCount = 0;
+            _.each(engineDatum.pv.split(' '), function(move) {
+               if (isNaN(move.charAt(0)) && move != '..') {
+                  pvLocation = livePvsC[pvKey][moveCount];
+                  if (pvLocation) {
+                     moveContainer = _.union(moveContainer, ["<a href='#' class='set-pv-board' live-pv-key='" + pvKey +
+                        "' move-key='" + moveCount +
+                        "' engine='" + (contno) +
+                        "' color='live'>" + pvLocation.m +
+                        '</a>']);
+                  }
+                  else
+                  {
+                     plog ("pvlocation not defined");
+                  }
+                  moveCount++;
+               } else {
+                  moveContainer = _.union(moveContainer, [move]);
+               }
+            });
+
+            if (boardArrows) {
+               if (pvKey == 0) {
+                  color = 'blue';
+               } else {
+                  color = 'orange';
+               }
+               if (contno == 2)
+               {
+                  color = 'reds';
+               }
+               else
+               {
+                  color = 'blues';
+               }
+               board.addArrowAnnotation(livePv[0].from, livePv[0].to, color, board.orientation());
+            }
+         });
+      }
+      $(container).append('<div class="engine-pv engine-pv-live alert alert-dark">' + moveContainer.join(' ') + '</div>');
+      livePvs[contno] = livePvsC[0];
+   });
 
 
    // $('#live-eval').bootstrapTable('load', engineData);
@@ -3891,110 +4052,75 @@ function updateStandtableData(data)
 {
    plog ("Updating standtable:", 0);
    var standtableData = data;
+   var localStandColumn = standColumns;
 
    var abbreviations = [];
    var standings = [];
 
    _.each(standtableData.Table, function(engine, key) {
-     abbreviations = _.union(abbreviations, [{abbr: engine.Abbreviation, name: key}]);
+      abbreviations = _.union(abbreviations, [{abbr: engine.Abbreviation, name: key}]);
    });
 
    _.each(standtableData.Order, function(engine, key) {
-     engineDetails = _.get(standtableData.Table, engine);
+      engineDetails = _.get(standtableData.Table, engine);
 
-     wins = (engineDetails.WinsAsBlack + engineDetails.WinsAsWhite);
-     elo = Math.round(engineDetails.Elo);
-     eloDiff = engineDetails.Rating + elo;
+      wins = (engineDetails.WinsAsBlack + engineDetails.WinsAsWhite);
+      elo = Math.round(engineDetails.Elo);
+      eloDiff = engineDetails.Rating + elo;
 
-     engine = '<div class="right-align"><img class="right-align-pic" src="img/engines/'+ getShortEngineName(engine) +'.jpg" />' + '<a class="right-align-name">' + engine + '</a></div>';
+      engine = '<div class="right-align"><img class="right-align-pic" src="img/engines/'+ getShortEngineName(engine) +'.jpg" />' + '<a class="right-align-name">' + engine + '</a></div>';
 
-     var entry = {
-       rank: engineDetails.Rank,
-       name: engine,
-       points: engineDetails.Score.toFixed(1)
-     };
+      var entry = {
+         rank: engineDetails.Rank,
+         name: engine,
+         points: engineDetails.Score.toFixed(1)
+      };
 
-     _.each(abbreviations, function (abbreviation) {
-       var score2 = '';
-       engineName = abbreviation.name;
-       engineAbbreviation = abbreviation.abbr;
+      _.each(abbreviations, function (abbreviation) {
+         var score2 = '';
+         engineName = abbreviation.name;
+         engineAbbreviation = abbreviation.abbr;
 
-       engineCount = standtableData.Order.length;
-       if (engineCount < 1) {
-         engineCount = 1;
-       }
-
-       rounds = Math.floor(engineDetails.Games / engineCount) + 1;
-
-       if (engineDetails.Abbreviation == engineAbbreviation) {
-         for (i = 0; i < rounds; i++) {
-           score2 = '';
+         engineCount = standtableData.Order.length;
+         if (engineCount < 1) {
+            engineCount = 1;
          }
-       } else {
-         resultDetails = _.get(engineDetails, 'Results');
-         matchDetails = _.get(resultDetails, engineName);
-         score2 =
+
+         rounds = Math.floor(engineDetails.Games / engineCount) + 1;
+
+         if (engineDetails.Abbreviation == engineAbbreviation) {
+            for (i = 0; i < rounds; i++) {
+               score2 = '';
+            }
+         } else {
+            resultDetails = _.get(engineDetails, 'Results');
+            matchDetails = _.get(resultDetails, engineName);
+            score2 =
             {
                Score: matchDetails.Scores,
                Text: matchDetails.Text
             }
-       }
-       _.set(entry, engineAbbreviation, score2);
-     });
+         }
+         _.set(entry, engineAbbreviation, score2);
+      });
 
-     standings = _.union(standings, [entry]);
+      standings = _.union(standings, [entry]);
    });
 
-   if (!standTableInitialized) {
-      columns = [
-     {
-       field: 'rank',
-       title: 'Rank'
-      ,sortable: true
-      ,width: '4%'
-     },
-     {
-       field: 'name',
-       title: 'Engine'
-      ,sortable: true
-      ,width: '18%'
-     },
-     {
-       field: 'points',
-       title: 'Points'
-      ,sortable: true
-      ,width: '7%'
-     }
-   ];
    _.each(standtableData.Order, function(engine, key) {
-     engineDetails = _.get(standtableData.Table, engine);
-     columns = _.union(columns, [{field: engineDetails.Abbreviation, title: engineDetails.Abbreviation,
-                                  formatter: formatter, cellStyle: cellformatter}]);
+      engineDetails = _.get(standtableData.Table, engine);
+      localStandColumn = _.union(localStandColumn,
+         [{field: engineDetails.Abbreviation, title: engineDetails.Abbreviation,
+            formatter: formatter, cellStyle: cellformatter}]);
    });
 
    $('#standtable').bootstrapTable({
-     columns: columns,
-     classes: 'table table-striped table-no-bordered',
-     sortName: 'rank'
+      columns: localStandColumn,
+      classes: 'table table-striped table-no-bordered',
+      sortName: 'rank'
    });
 
-     standTableInitialized = true;
-   }
    $('#standtable').bootstrapTable('load', standings);
-}
-
-function updateStandtable()
-{
-   axios.get('crosstable.json')
-   .then(function (response)
-   {
-      //updateStandtableData(response.data);
-   })
-   .catch(function (error)
-   {
-      // handle error
-      console.log(error);
-   });
 }
 
 function setLastMoveTime(data)
@@ -4022,9 +4148,9 @@ function setTwitch() {
    $('#twitchcheck').prop('checked', !doPlay);
 
    let options = {
-     width: 340,
-     height: 400,
-     channel: twitchAccount,
+      width: 340,
+      height: 400,
+      channel: twitchAccount,
    };
 
    twitchPlayer = new Twitch.Player("twitchvid", options);
@@ -4045,13 +4171,13 @@ function setTwitch() {
 }
 
 function playTwitchPlayer(doPlay) {
-  if (doPlay) {
-     twitchPlayer.play();
-     twitchDiv.show();
-  } else {
-     twitchPlayer.pause();
-	 twitchDiv.hide();
-  }
+   if (doPlay) {
+      twitchPlayer.play();
+      twitchDiv.show();
+   } else {
+      twitchPlayer.pause();
+      twitchDiv.hide();
+   }
 }
 
 function showEvalCont()
@@ -4237,7 +4363,7 @@ function setNotationPvDefault()
    {
       boardNotationPv = false;
       $(cont).prop('checked', true);
-    }
+   }
    else
    {
       boardNotationPv = true;
@@ -4459,19 +4585,19 @@ function addToolTipInit(divx, divimg, direction)
       contentCloning: true,
       delayTouch: [10, 2000],
       trigger: 'custom',
-         triggerOpen: {
-            mouseenter: true,
-            click: true,
-            touchstart: true,
-            tap: true
-         },
-         triggerClose: {
-            mouseleave: true,
-            click: true,
-            touchleave: true,
-            tap: true,
-            originClick: true
-         }
+      triggerOpen: {
+         mouseenter: true,
+         click: true,
+         touchstart: true,
+         tap: true
+      },
+      triggerClose: {
+         mouseleave: true,
+         click: true,
+         touchleave: true,
+         tap: true,
+         originClick: true
+      }
    });
 }
 
@@ -4490,20 +4616,20 @@ function initToolTip()
 }
 
 function stopEvProp(e) {
-    e.cancelBubble = !0;
-    if (e.stopPropagation) {
-        e.stopPropagation()
-    }
-    if (e.preventDefault) {
-        e.preventDefault()
-    }
-    return !1
+   e.cancelBubble = !0;
+   if (e.stopPropagation) {
+      e.stopPropagation()
+   }
+   if (e.preventDefault) {
+      e.preventDefault()
+   }
+   return !1
 }
 
 function firstButtonMain()
 {
-  activePly = 1;
-  handlePlyChange();
+   activePly = 1;
+   handlePlyChange();
 };
 
 function firstButton()
@@ -4527,12 +4653,12 @@ function firstButton()
 
 function backButtonMain()
 {
-  if (activePly > 1) {
-    activePly--;
-  }
-  handlePlyChange();
+   if (activePly > 1) {
+      activePly--;
+   }
+   handlePlyChange();
 
-  return false;
+   return false;
 };
 
 function backButton()
@@ -4556,14 +4682,14 @@ function backButton()
 
 function forwardButtonMain()
 {
-  if (activePly < loadedPlies) {
-    activePly++;
-  } else {
-    viewingActiveMove = true;
-  }
-  handlePlyChange();
+   if (activePly < loadedPlies) {
+      activePly++;
+   } else {
+      viewingActiveMove = true;
+   }
+   handlePlyChange();
 
-  return false;
+   return false;
 }
 
 function forwardButton()
@@ -4587,7 +4713,7 @@ function forwardButton()
 
 function endButtonMain()
 {
-  onLastMove();
+   onLastMove();
 }
 
 function endButton()
@@ -4611,34 +4737,34 @@ function endButton()
 
 function tcecHandleKey(e)
 {
-    var keycode, oldPly, oldVar, colRow, colRowList;
-    if (!e)
-    {
-        e = window.event
-    }
-    keycode = e.keyCode;
-    if (e.altKey || e.ctrlKey || e.metaKey) {
-        return !0
-    }
+   var keycode, oldPly, oldVar, colRow, colRowList;
+   if (!e)
+   {
+      e = window.event
+   }
+   keycode = e.keyCode;
+   if (e.altKey || e.ctrlKey || e.metaKey) {
+      return !0
+   }
 
-    switch (keycode)
-    {
-        case 37:
-            backButton();
-            break;
-        case 38:
-            firstButton();
-            break;
-        case 39:
-            forwardButton();
-            break;
-        case 40:
-            endButton();
-            break;
-        default:
-            return !0
-    }
-    return stopEvProp(e)
+   switch (keycode)
+   {
+      case 37:
+      backButton();
+      break;
+      case 38:
+      firstButton();
+      break;
+      case 39:
+      forwardButton();
+      break;
+      case 40:
+      endButton();
+      break;
+      default:
+      return !0
+   }
+   return stopEvProp(e)
 }
 
 function simpleAddEvent(obj, evt, cbk)
@@ -4671,231 +4797,231 @@ function crossSorted(a,b)
 function initTables()
 {
    $('#event-overview').bootstrapTable({
-     classes: 'table table-striped table-no-bordered',
-     columns: [
-       {
-           field: 'TimeControl',
-           title: 'TC'
-       },
-       {
-           field: 'Termination',
-           title: 'Adj Rule'
-       },
-       {
-           field: 'movesTo50R',
-           title: '50'
-       },
-       {
-           field: 'movesToDraw',
-           title: 'Draw'
-       },
-       {
-           field: 'movesToResignOrWin',
-           title: 'Win'
-       },
-       {
-           field: 'piecesleft',
-           title: 'TB'
-       },
-       {
-           field: 'Result',
-           title: 'Result'
-       },
-       {
-           field: 'Round',
-           title: 'Round'
-       },
-       {
-           field: 'Opening',
-           title: 'Opening'
-       },
-       {
-           field: 'ECO',
-           title: 'ECO'
-       },
-       {
-           field: 'Event',
-           title: 'Event'
-       },
-       {
-           field: 'Viewers',
-           title: 'Viewers'
-       }
-     ]
+      classes: 'table table-striped table-no-bordered',
+      columns: [
+      {
+         field: 'TimeControl',
+         title: 'TC'
+      },
+      {
+         field: 'Termination',
+         title: 'Adj Rule'
+      },
+      {
+         field: 'movesTo50R',
+         title: '50'
+      },
+      {
+         field: 'movesToDraw',
+         title: 'Draw'
+      },
+      {
+         field: 'movesToResignOrWin',
+         title: 'Win'
+      },
+      {
+         field: 'piecesleft',
+         title: 'TB'
+      },
+      {
+         field: 'Result',
+         title: 'Result'
+      },
+      {
+         field: 'Round',
+         title: 'Round'
+      },
+      {
+         field: 'Opening',
+         title: 'Opening'
+      },
+      {
+         field: 'ECO',
+         title: 'ECO'
+      },
+      {
+         field: 'Event',
+         title: 'Event'
+      },
+      {
+         field: 'Viewers',
+         title: 'Viewers'
+      }
+      ]
    });
 
    $('#h2h').bootstrapTable({
-       classes: 'table table-striped table-no-bordered',
-       pagination: true,
-       paginationLoop: true,
-       striped: true,
-       smartDisplay: true,
-       sortable: true,
-       pageList: [10,20,50,100],
-       pageSize:10,
-       rememberOrder: true,
-       columns: [
-       {
-           field: 'Gamesort',
-           title: 'sortnumber',
-           visible: false
-       },
-       {
-           field: 'h2hrank',
-           title: 'Game#'
-           ,sortable: true
-           ,sorter: schedSorted
-           ,sortName: 'Gamesort'
-           ,align: 'left'
-       },
-       {
-           field: 'FixWhite',
-           title: 'White'
-           ,sortable: true
-       },
-       {
+      classes: 'table table-striped table-no-bordered',
+      pagination: true,
+      paginationLoop: true,
+      striped: true,
+      smartDisplay: true,
+      sortable: true,
+      pageList: [10,20,50,100],
+      pageSize:10,
+      rememberOrder: true,
+      columns: [
+      {
+         field: 'Gamesort',
+         title: 'sortnumber',
+         visible: false
+      },
+      {
+         field: 'h2hrank',
+         title: 'Game#'
+         ,sortable: true
+         ,sorter: schedSorted
+         ,sortName: 'Gamesort'
+         ,align: 'left'
+      },
+      {
+         field: 'FixWhite',
+         title: 'White'
+         ,sortable: true
+      },
+      {
          field: 'WhiteEv',
          title: 'W.Ev'
-           ,sortable: true
-       },
-       {
+         ,sortable: true
+      },
+      {
          field: 'BlackEv',
          title: 'B.Ev'
-           ,sortable: true
-       },
-       {
-           field: 'FixBlack',
-           title: 'Black'
-           ,sortable: true
-       },
-       {
+         ,sortable: true
+      },
+      {
+         field: 'FixBlack',
+         title: 'Black'
+         ,sortable: true
+      },
+      {
          field: 'Result',
          title: 'Result'
-           ,sortable: true
-       },
-       {
+         ,sortable: true
+      },
+      {
          field: 'Moves',
          title: 'Moves'
-           ,sortable: true
-       },
-       {
+         ,sortable: true
+      },
+      {
          field: 'Duration',
          title: 'Duration'
-           ,sortable: true
-       },
-       {
+         ,sortable: true
+      },
+      {
          field: 'Opening',
          title: 'Opening',
          sortable: true,
          align: 'left'
-       },
-       {
+      },
+      {
          field: 'Termination',
          title: 'Termination'
-           ,sortable: true
-       },
-       {
+         ,sortable: true
+      },
+      {
          field: 'ECO',
          title: 'ECO'
-           ,sortable: true
-       },
-       {
+         ,sortable: true
+      },
+      {
          field: 'FinalFen',
          title: 'Final Fen',
          align: 'left'
-       },
-       {
+      },
+      {
          field: 'Start',
          title: 'Start'
-       }
-     ]
+      }
+      ]
    });
 
    $('#schedule').bootstrapTable({
-       classes: 'table table-striped table-no-bordered',
-       pagination: true,
-       paginationLoop: true,
-       striped: true,
-       smartDisplay: true,
-       sortable: true,
-       pageList: [10,20,50,100],
-       pageSize:10,
-       rememberOrder: true,
-       search: true,
-       columns: [
-       {
-           field: 'Gamesort',
-           title: 'sortnumber',
-           visible: false
-       },
-       {
-           field: 'Game',
-           title: 'Game#'
-           ,sortable: true
-           ,sorter: schedSorted
-           ,sortName: 'Gamesort'
-       },
-       {
-           field: 'FixWhite',
-           title: 'White'
-           ,sortable: true
-       },
-       {
+      classes: 'table table-striped table-no-bordered',
+      pagination: true,
+      paginationLoop: true,
+      striped: true,
+      smartDisplay: true,
+      sortable: true,
+      pageList: [10,20,50,100],
+      pageSize:10,
+      rememberOrder: true,
+      search: true,
+      columns: [
+      {
+         field: 'Gamesort',
+         title: 'sortnumber',
+         visible: false
+      },
+      {
+         field: 'Game',
+         title: 'Game#'
+         ,sortable: true
+         ,sorter: schedSorted
+         ,sortName: 'Gamesort'
+      },
+      {
+         field: 'FixWhite',
+         title: 'White'
+         ,sortable: true
+      },
+      {
          field: 'WhiteEv',
          title: 'Ev'
-           ,sortable: true
-       },
-       {
-           field: 'FixBlack',
-           title: 'Black'
-           ,sortable: true
-       },
-       {
+         ,sortable: true
+      },
+      {
+         field: 'FixBlack',
+         title: 'Black'
+         ,sortable: true
+      },
+      {
          field: 'BlackEv',
          title: 'Ev'
-           ,sortable: true
-       },
-       {
+         ,sortable: true
+      },
+      {
          field: 'Result',
          title: 'Result'
-           ,sortable: true
-       },
-       {
+         ,sortable: true
+      },
+      {
          field: 'Moves',
          title: 'Moves'
-           ,sortable: true
-       },
-       {
+         ,sortable: true
+      },
+      {
          field: 'Duration',
          title: 'Duration'
-           ,sortable: true
-       },
-       {
+         ,sortable: true
+      },
+      {
          field: 'Opening',
          title: 'Opening',
          sortable: true,
          align: 'left'
-       },
-       {
+      },
+      {
          field: 'Termination',
          title: 'Termination'
-           ,sortable: true
-       },
-       {
+         ,sortable: true
+      },
+      {
          field: 'ECO',
          title: 'ECO'
-           ,sortable: true
-       },
-       {
+         ,sortable: true
+      },
+      {
          field: 'FinalFen',
          title: 'Final Fen',
          align: 'left'
-       },
-       {
+      },
+      {
          field: 'Start',
          title: 'Start'
-       }
-     ]
+      }
+      ]
    });
 
    $("#schedule").on("click-cell.bs.table", function (field, value, row, $el) {
@@ -4906,107 +5032,128 @@ function initTables()
    });
 
    $('#tf').bootstrapTable({
-       classes: 'table table-striped table-no-bordered',
-       striped: true,
-       smartDisplay: true,
-       sortable: true,
-       rememberOrder: true,
-       columns: [
-       {
-           field: 'startTime',
-           title: 'Start time'
-       },
-       {
-           field: 'endTime',
-           title: 'End time'
-       },
-       {
+      classes: 'table table-striped table-no-bordered',
+      striped: true,
+      smartDisplay: true,
+      sortable: true,
+      rememberOrder: true,
+      columns: [
+      {
+         field: 'startTime',
+         title: 'Start time'
+      },
+      {
+         field: 'endTime',
+         title: 'End time'
+      },
+      {
          field: 'totalTime',
          title: 'Duration',
-       },
-       {
+      },
+      {
          field: 'avgMoves',
          title: 'Avg Moves'
-       },
-       {
+      },
+      {
          field: 'avgTime',
          title: 'Avg Time'
-       },
-       {
+      },
+      {
          field: 'whiteWins',
          title: 'White wins'
-       },
-       {
+      },
+      {
          field: 'blackWins',
          title: 'Black wins'
-       },
-       {
+      },
+      {
          field: 'drawRate',
          title: 'Draw Rate'
-       },
-       {
+      },
+      {
          field: 'crashes',
          title: 'Crashes'
-       },
-       {
-           field: 'minMoves',
-           title: 'Min Moves'
-       },
-       {
+      },
+      {
+         field: 'minMoves',
+         title: 'Min Moves'
+      },
+      {
          field: 'maxMoves',
          title: 'Max Moves'
-       },
-       {
+      },
+      {
          field: 'minTime',
          title: 'Min Time'
-       },
-       {
+      },
+      {
          field: 'maxTime',
          title: 'Max Time'
-       }
-     ]
+      }
+      ]
    });
 
 
    $('#winner').bootstrapTable({
-       classes: 'table table-striped table-no-bordered',
-       pagination: true,
-       paginationLoop: true,
-       striped: true,
-       smartDisplay: true,
-       sortable: true,
-       pageList: [10,20,50,100],
-       pageSize:10,
-       rememberOrder: true,
-       search: true,
-       columns: [
-       {
-           field: 'name',
-           title: 'S#',
-           visible: true
-       },
-       {
-           field: 'winner',
-           title: 'Champion',
-           sortable: true
-       },
-       {
-           field: 'runner',
-           title: 'Runner-up',
-           sortable: true
-       },
-       {
-           field: 'score',
-           title: 'Score',
-           sortable: true
-       },
-       {
+      classes: 'table table-striped table-no-bordered',
+      pagination: true,
+      paginationLoop: true,
+      striped: true,
+      smartDisplay: true,
+      sortable: true,
+      pageList: [10,20,50,100],
+      pageSize:10,
+      rememberOrder: true,
+      search: true,
+      columns: [
+      {
+         field: 'name',
+         title: 'S#',
+         visible: true
+      },
+      {
+         field: 'winner',
+         title: 'Champion',
+         sortable: true
+      },
+      {
+         field: 'runner',
+         title: 'Runner-up',
+         sortable: true
+      },
+      {
+         field: 'score',
+         title: 'Score',
+         sortable: true
+      },
+      {
          field: 'date',
          title: 'Date',
          sortable: false
-       }
-     ]
+      }
+      ]
    });
+
+   standColumns = [
+   {
+      field: 'rank',
+      title: 'Rank'
+      ,sortable: true
+      ,width: '4%'
+   },
+   {
+      field: 'name',
+      title: 'Engine'
+      ,sortable: true
+      ,width: '18%'
+   },
+   {
+      field: 'points',
+      title: 'Points'
+      ,sortable: true
+      ,width: '7%'
+   }
+   ];
 }
 
 function removeClassEngineInfo(cont)
@@ -5058,9 +5205,9 @@ function toggleTheme()
 {
    var darkMode = localStorage.getItem('tcec-dark-mode');
    if (darkMode == 20) {
-     localStorage.setItem('tcec-dark-mode', 10);
+      localStorage.setItem('tcec-dark-mode', 10);
    } else {
-     localStorage.setItem('tcec-dark-mode', 20);
+      localStorage.setItem('tcec-dark-mode', 20);
    }
    setDefaultThemes();
    updateTables();
@@ -5214,7 +5361,7 @@ function scheduleToTournamentInfo(schedJson)
       }
    }
    ;
-   data.avgMoves = Math.round(data.avgMoves/schedJson.length);
+   data.avgMoves = Math.round(data.avgMoves/compGames);
 
    let draws = compGames - data.whiteWins - data.blackWins
    data.drawRate = divide2Decimals(draws * 100, compGames) + "%";
@@ -5235,50 +5382,50 @@ function divide2Decimals(num,div)
 }
 
 function hmsToSecondsOnly(str) {
-    var p = str.split(':'),
-        s = 0,
-        m = 1;
+   var p = str.split(':'),
+   s = 0,
+   m = 1;
 
-    while (p.length > 0) {
-        s += m * parseInt(p.pop(), 10);
-        m *= 60;
-    }
+   while (p.length > 0) {
+      s += m * parseInt(p.pop(), 10);
+      m *= 60;
+   }
 
-    return s;
+   return s;
 }
 
 function pad(num)
 {
-    return ("0"+num).slice(-2);
+   return ("0"+num).slice(-2);
 }
 
 function hhmm(secs)
 {
-  var minutes = Math.floor(secs / 60);
-  secs = secs%60;
-  var hours = Math.floor(minutes/60)
-  minutes = minutes%60;
-  return `${pad(hours)}:${pad(minutes)}`;
-  // return pad(hours)+":"+pad(minutes)+":"+pad(secs); for old browsers
+   var minutes = Math.floor(secs / 60);
+   secs = secs%60;
+   var hours = Math.floor(minutes/60)
+   minutes = minutes%60;
+   return `${pad(hours)}:${pad(minutes)}`;
+   // return pad(hours)+":"+pad(minutes)+":"+pad(secs); for old browsers
 }
 
 function hhmmss(secs)
 {
-  var minutes = Math.floor(secs / 60);
-  secs = secs%60;
-  var hours = Math.floor(minutes/60)
-  minutes = minutes%60;
-  var days = Math.floor(hours/24);
-  hours = hours%24;
-  if (days > 0)
-  {
-     return `${pad(days)}d, ${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
-  }
-  else
-  {
-     return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
-  }
-  // return pad(hours)+":"+pad(minutes)+":"+pad(secs); for old browsers
+   var minutes = Math.floor(secs / 60);
+   secs = secs%60;
+   var hours = Math.floor(minutes/60)
+   minutes = minutes%60;
+   var days = Math.floor(hours/24);
+   hours = hours%24;
+   if (days > 0)
+   {
+      return `${pad(days)}d, ${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
+   }
+   else
+   {
+      return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
+   }
+   // return pad(hours)+":"+pad(minutes)+":"+pad(secs); for old browsers
 }
 
 function getLocalDate(startDate, minutes)
@@ -5290,7 +5437,8 @@ function getLocalDate(startDate, minutes)
       momentDate.add(minutes * 60 * 1000);
    }
    momentDate.add(timezoneDiff);
-   return(momentDate.format('HH:mm:ss on YYYY.MM.DD'));                                                                                                                                               }
+   return(momentDate.format('HH:mm:ss on YYYY.MM.DD'));
+}
 
 function setDefaultLiveLog()
 {
@@ -5349,3 +5497,9 @@ function unlistenLog()
    unlistenLogMain('livelog');
 }
 
+function setTwitchChange(data)
+{
+   updateTourInfo(data);
+   twitchChatUrl = 'https://www.twitch.tv/embed/' + data.twitchaccount + '/chat';
+   setTwitchChatUrl(darkMode);
+}

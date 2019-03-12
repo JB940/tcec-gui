@@ -12,7 +12,7 @@ var evalChartData = {};
 var engineColorArray = ['darkred', 'red', 'green', 'darkgreen', 'yellow', 'purple', 'orange'];
 var evalconstant = 10.0;
 var eng1L = 'Bluefish';
-var eng2L = 'Redmodo';
+var eng2L = 'Redhos';
 
 function setevalChartData()
 {
@@ -610,7 +610,7 @@ function updateChartData()
 
    var plyNum = 0;
 
-	_.each(loadedPgn.Moves, function(move, key) {
+	_.each(prevPgnData.Moves, function(move, key) {
 		if (!move.book) {
 			moveNumber = Math.round(key / 2) + 1;
 
