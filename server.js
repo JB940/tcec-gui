@@ -145,6 +145,9 @@ var watcherSlow = chokidar.watch(ctable, {
    });
 watcherSlow.add('schedule.json');
 watcherSlow.add('banner.txt');
+watcherSlow.add('gamelist.json');
+watcherSlow.add('tournament.json');
+watcherSlow.add('enginerating.json');
 
 var count = 0;
 var socket = 0;
@@ -200,6 +203,7 @@ function getPGN(id, menuData)
    var found = 0;
    var retPgn = {};
    var data = menuData;
+   retPgn.found = 0;
 
    _.each(data.Seasons, function(value, key) {
       if (found)
@@ -215,7 +219,8 @@ function getPGN(id, menuData)
             retPgn.scjson  = subvalue.abb + "_Schedule.json";
             retPgn.download = value.download;
             retPgn.url = subvalue.url;
-            found = 0;
+            found = 1;
+            retPgn.found = 1;
             return false;
          }
       });
@@ -262,11 +267,26 @@ function checkLatestArchive()
    return (pgnFile);
 }
 
-if (!bonus && checkLatestArchive())
+function addLatestArch()
 {
-   console.log ("Adding pgnfile:" + pgnFile);
-   watcherSlow.add(pgnFile);
+   if (!bonus)
+   {
+      watcherSlow.unwatch(pgnFile);
+      var retPgn = checkLatestArchive();
+      if (retPgn)
+      {
+         console.log ("Adding pgnfile:" + pgnFile);
+         watcherSlow.add(pgnFile);
+      }
+      else
+      {
+         console.log ("No current file to monitor");
+      }
+   }
 }
+
+addLatestArch ();
+runPerlArchive();
 
 io.sockets.on ('connection', function(socket)
 {
@@ -375,6 +395,7 @@ function getDeltaPgn(pgnX)
    var countPgn = 0;
    var maxKey = pgnX.Moves.length;
    pgnX.Users = userCount();
+   pgnX.Round = pgnX.Headers.Round * 100;
 
    if (prevData && isJsonDiff(prevData.Headers, pgnX.Headers))
    {
@@ -523,31 +544,41 @@ watcherFast
                         })
   .on('error', error => console.log(`Watcher error: ${error}`));
 
+function runPerlArchive()
+{
+   console.log ("Need to do something about pgnfile");
+   if (inprogress == 0)
+   {
+      inprogress = 1;
+      var perlrun = "perl " + singlePerl + " --ful " + fullzip + " --tag " + tag + ' --loc ' + json + tag;
+      console.log ("Need to run :" + perlrun);
+      exec(perlrun, function(err, stdout, stderr) {
+         console.log ("Doing it:" + stdout + stderr);
+         setTimeout(function() {
+            io.emit('refreshsched', {'count': 1});
+         }, 15000);
+         inprogress = 0;
+      });
+   }
+   else
+   {
+      console.log ("Already another in progress");
+   }
+}
+
 watcherSlow.on('change', (path, stats) => 
 {
    console.log ("slow path changed:" + path);
    if (!bonus && (path == pgnFile))
    {
-      console.log ("Need to do something about pgnfile");
-      if (inprogress == 0)
-      {
-         inprogress = 1;
-         var perlrun = "perl " + singlePerl + " --ful " + fullzip + " --tag " + tag + ' --loc ' + json + tag;
-         console.log ("Need to run :" + perlrun);
-         exec(perlrun, function(err, stdout, stderr) {
-            console.log ("Doing it:" + stdout + stderr);
-            setTimeout(function() {
-               io.emit('refreshsched', {'count': 1});
-            }, 15000);
-            inprogress = 0;
-         });
-      }
-      else
-      {
-         console.log ("Already another in progress");
-      }
+      runPerlArchive();
    }
-   else
+   if (!bonus && path.match(/gamelist/))
+   {
+      addLatestArch();
+      runPerlArchive();
+   }
+   if ((path != pgnFile) && (!path.match(/gamelist/)))
    {
       var content = fs.readFileSync(path, "utf8");
       try
@@ -555,13 +586,24 @@ watcherSlow.on('change', (path, stats) =>
          var data = JSON.parse(content);
          if (path.match(/crosstable/))
          {
-            broadCastData(socket, 'crosstable', path, data, prevCrossData);
-            prevCrossData = data;
+            console.log ("Sendnig crosstable data:");
+            io.local.emit('crosstable', data);
          }
          if (path.match(/schedule/))
          {
             broadCastData(socket, 'schedule', path, data, prevSchedData);
             prevSchedData = data;
+         }
+         if (path.match(/tournament/))
+         {
+            io.local.emit('tournament', data);
+         }
+         if (path.match(/enginerating/))
+         {
+            io.local.emit('enginerating', data);
+            exec("cp /var/www/json/shared/enginerating.json /var/www/json/archive/" + tag + "_Enginerating.egjson", function(err, stdout, stderr) {
+               console.log ("Doing it:" + stdout + stderr);
+            });
          }
          if (path.match(/banner/))
          {

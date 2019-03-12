@@ -9,7 +9,6 @@ pvBoardElac = $('#pv-boardac');
 var squareToHighlight = '';
 var pvSquareToHighlight = '';
 var crossTableInitialized = false;
-var standTableInitialized = false;
 var gameActive = false;
 
 var squareClass = 'square-55d63';
@@ -29,8 +28,6 @@ var defaultStartTime = 0;
 var viewingActiveMove = true;
 var loadedPlies = 0;
 var activePly = 0;
-
-var loadedPgn = '';
 
 var activeFen = '';
 var lastMove = '';
@@ -54,19 +51,14 @@ var liveEngineEval2 = [];
 var debug = 0;
 var whiteEngineFull = null;
 var blackEngineFull = null;
-var prevwhiteEngineFull = null;
-var prevblackEngineFull = null
-var prevwhiteEngineFullSc = null;
-var prevblackEngineFullSc = null
 var h2hRetryCount = 0;
-var scrRetryCount = 0;
+var h2hScoreRetryCount = 0;
 
 var livePVHist = [];
 var whitePv = [];
 var blackPv = [];
 var livePvs = [];
 var activePv = [];
-var activePvH = [];
 var highlightpv = 0;
 var showLivEng1 = 1;
 var showLivEng2 = 1;
@@ -79,12 +71,13 @@ var highlightClassPv = 'highlight-white highlight-none';
 var boardNotation = true;
 var boardNotationPv = true;
 var boardArrows = true;
-var tcecElo = 1;
-var engGlobData = 0;
+var tcecElo = 0;
+var engineRatingGlobalData = 0;
 var tourInfo = {};
 var btheme = "chess24";
 var ptheme = "chess24";
 var oldSchedData = null;
+var activePvH = [];
 
 var moveFrom = null;
 var moveFromPvW = null
@@ -107,6 +100,8 @@ var eventNameHeader = 0;
 var lastRefreshTime = 0;
 var userCount = 0;
 var globalRoom = 0;
+
+var standColumns = [];
 
 var onMoveEnd = function() {
    boardEl.find('.square-' + squareToHighlight)
@@ -144,6 +139,7 @@ function updateRefresh()
 
 function updateAll()
 {
+   eventNameHeader = 0;
    updatePgn(1);
    setTimeout(function() { updateTables(); }, 5000);
 }
@@ -163,8 +159,6 @@ function plog(message, debugl)
 
 function updatePgnDataMain(data)
 {
-   loadedPgn = data;
-
    if (!prevPgnData)
    {
       updateEngineInfo('#whiteenginetable', '#white-engine-info', data.WhiteEngineOptions);
@@ -192,6 +186,7 @@ function updatePgnData(data, read)
 
 function updatePgn(resettime)
 {
+   eventNameHeader = 0;
    axios.get('live.json?no-cache' + (new Date()).getTime())
    .then(function (response)
    {
@@ -203,6 +198,7 @@ function updatePgn(resettime)
          timeDiff = currTime.getTime() - lastMod.getTime();
       }
       prevPgnData = 0;
+      response.data.gameChanged = 1;
       updatePgnDataMain(response.data);
    })
    .catch(function (error) {
@@ -416,33 +412,32 @@ function setPgn(pgn)
       plog ("XXX: Entered for pgn.Moves.length:" + pgn.Moves.length + " , round is :" + pgn.Headers.Round, 1);
    }
 
-   if (crosstableData)
-   {
-      updateScoreHeadersData();
-   }
+   updateH2hData();
+   updateScoreHeadersData();
 
-   if (pgn.gameChanged)
-   {
+   if (pgn.gameChanged) {
+      eventNameHeader = 0;
       prevPgnData = pgn;
+      prevPgnData.gameChanged = 0;
+      plog ("New game, round is :" + parseFloat(pgn.Headers.Round), 0);
    }
-
-   if (prevPgnData)
-   {
+   else {
       plog ("prevPgnData.Moves.length:" + prevPgnData.Moves.length + " ,pgn.lastMoveLoaded:" + pgn.lastMoveLoaded, 0);
+      if (parseFloat(prevPgnData.Headers.Round) != parseFloat(pgn.Headers.Round))
+      {
+         eventNameHeader = 0;
+         setTimeout(function() { updatePgn(1); }, 100);
+         return;
+      }
       if (prevPgnData.Moves.length < pgn.lastMoveLoaded)
       {
-         setTimeout(function() { updateAll(); }, 100);
-         return;
-      }
-      else if (parseFloat(prevPgnData.Headers.Round) != parseFloat(pgn.Headers.Round))
-      {
+         eventNameHeader = 0;
          setTimeout(function() { updateAll(); }, 100);
          return;
       }
    }
 
-   if (prevPgnData)
-   {
+   if (prevPgnData) {
       for (let i = 0 ; i < pgn.totalSent ; i++) {
          prevPgnData.Moves[i + pgn.lastMoveLoaded] = pgn.Moves [i];
       }
@@ -451,7 +446,6 @@ function setPgn(pgn)
       prevPgnData.Headers = pgn.Headers;
       prevPgnData.Users = pgn.Users;
       pgn = prevPgnData;
-      loadedPgn = prevPgnData;
    }
    else
    {
@@ -527,8 +521,6 @@ function setPgn(pgn)
 
    if (previousPlies > currentPlyCount) {
       initializeCharts();
-      standTableInitialized = false;
-      updateStandtable();
    }
 
    var whiteEval = {};
@@ -847,7 +839,7 @@ function getShortEngineName(engine)
 
 function setInfoFromCurrentHeaders()
 {
-   var header = loadedPgn.Headers.White;
+   var header = prevPgnData.Headers.White;
    var name = header;
    name = getShortEngineName(header);
    $('.white-engine-name').html(name);
@@ -857,7 +849,7 @@ function setInfoFromCurrentHeaders()
    $('#white-engine').attr('src', imgsrc);
    $('#white-engine').attr('alt', header);
    $('#white-engine-chessprogramming').attr('href', 'https://www.chessprogramming.org/' + name);
-   header = loadedPgn.Headers.Black;
+   header = prevPgnData.Headers.Black;
    blackEngineFull = header;
    name = getShortEngineName(header);
    $('.black-engine-name').html(name);
@@ -870,7 +862,7 @@ function setInfoFromCurrentHeaders()
 
 function getMoveFromPly(ply)
 {
-   return loadedPgn.Moves[ply];
+   return prevPgnData.Moves[ply];
 }
 
 function fixedDeci(value)
@@ -919,7 +911,7 @@ function getTBHits(tbhits)
 
 function getEvalFromPly(ply)
 {
-   selectedMove = loadedPgn.Moves[ply];
+   selectedMove = prevPgnData.Moves[ply];
 
    side = 'White';
    if (whiteToPlay) {
@@ -1105,8 +1097,8 @@ function updateMoveValues(whiteToPlay, whiteEval, blackEval)
 
    $('.white-engine-eval').html(whiteEval.eval);
 
-   var blackEvalPt = getPct(loadedPgn.Headers.Black, blackEval.eval);
-   var whiteEvalPt = getPct(loadedPgn.Headers.White, whiteEval.eval);
+   var blackEvalPt = getPct(prevPgnData.Headers.Black, blackEval.eval);
+   var whiteEvalPt = getPct(prevPgnData.Headers.White, whiteEval.eval);
    $('.black-engine-name-full-new').html(blackEvalPt);
    $('.white-engine-name-full-new').html(whiteEvalPt);
    //$(eval a=(((((Math.atan(($(query)100)/290.680623072))/3.096181612)+0.5)100)-50);
@@ -1535,6 +1527,7 @@ function handlePlyChange(handleclick)
                if (parseInt(livePVHist[yy].moves[xx].ply) == activePly)
                {
                   livePVHist[yy].moves[xx].engine = livePVHist[yy].engine;
+                  plog ("XXX: updating live data:" + activePly, 1);
                   updateLiveEvalData(livePVHist[yy].moves[xx], 0, prevMove.fen, yy, 0);
                   break;
                }
@@ -2132,7 +2125,7 @@ function getRating(engine, engName)
       engNameL = engName;
    }
 
-   _.each(engGlobData.ratings, function(engine, key) {
+   _.each(engineRatingGlobalData.ratings, function(engine, key) {
       if (engNameL == engine.name)
       {
          elo = engine.elo;
@@ -2209,7 +2202,7 @@ function getOverallElo(data)
          blackEngine.Rating = blackRating;
       });
       engine.Rating = engine.OrigRating;
-      engine.eloDiff = eloDiff;
+      engine.elo = eloDiff;
       plog ("Final eloDiff: " + eloDiff + " ,fscore: " + parseInt(engine.Rating + eloDiff), 1);
    });
 }
@@ -2219,7 +2212,7 @@ function sleep(ms)
    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-var crash_re = /^(?:TCEC|Syzygy|TB pos|in progress|(?:White|Black) mates|Stale|Insuff|Fifty|3-[fF]old)/; // All possible valid terminations (hopefully).
+var crash_re = /^(?:TCEC|Syzygy|TB pos|.*to be resumed|in progress|(?:White|Black) resigns|(?:White|Black) mates|Stale|Insuff|Fifty|3-[fF]old)/; // All possible valid terminations (hopefully).
 
 function getEngRecSched(data, engineName)
 {
@@ -2374,48 +2367,48 @@ function eliminateCrash(data)
 
 function updateScoreHeadersData()
 {
-   var data = crosstableData;
-   whiteScore = 0;
-   blackScore = 0;
-
-   _.each(crosstableData.Table, function(engine, key) {
-      _.each(engine.Results, function(oppEngine, oppkey)
+   if (!crosstableData)
+   {
+      if (h2hScoreRetryCount < 10)
       {
-         if (whiteEngineFull != null && key == whiteEngineFull)
-         {
-            if (oppkey == blackEngineFull)
-            {
-               $('#white-engine-elo').html(data.Table[key].Rating);
-               $('#black-engine-elo').html(data.Table[oppkey].Rating);
-               var strText = oppEngine.Text;
-               for (var i = 0; i < strText.length; i++)
-               {
-                  plog ("strText.charAt(i): " + strText.charAt(i), 1);
-                  plog ("Whitescore: " + whiteScore + ", blakcScore:" + blackScore + ",oppEngine.Text:" + oppEngine.Text, 1);
-                  if (strText.charAt(i) == '0')
-                  {
-                     blackScore = blackScore + 1;
-                  }
-                  else if (strText.charAt(i) == '1')
-                  {
-                     whiteScore = whiteScore + 1;
-                  }
-                  else if (strText.charAt(i) == '=')
-                  {
-                     blackScore = blackScore + 0.5;
-                     whiteScore = whiteScore + 0.5;
-                  }
-               }
-               $('.white-engine-score').html(whiteScore.toFixed(1));
-               $('.black-engine-score').html(blackScore.toFixed(1));
-            }
-         }
-      });
-   });
-   plog ("Updated png elo:, whiteEngineFull:" + whiteEngineFull + " ,blackEngineFull:" + blackEngineFull, 0);
+         setTimeout(function() { updateScoreHeadersData(); }, 5000);
+         plog ("H2h score did not get updated:" + h2hScoreRetryCount, 0);
+         h2hScoreRetryCount = h2hScoreRetryCount + 1;
+         return;
+      }
+   }
 
-   prevwhiteEngineFull = whiteEngineFull;
-   prevblackEngineFull = blackEngineFull;
+   if ((crosstableData.whiteCurrent === whiteEngineFull) &&
+      (crosstableData.blackCurrent === blackEngineFull))
+   {
+      return;
+   }
+
+   plog ("H2H scores updated", 0);
+
+   var scores = {};
+   var whiteRes = crosstableData.Table[whiteEngineFull];
+   var blackRes = crosstableData.Table[blackEngineFull];
+   var whiteDiv = $("#white-engine-elo");
+   var blackDiv = $("#black-engine-elo");
+   var whiteSc = $(".white-engine-score");
+   var blackSc = $(".black-engine-score");
+
+   if (whiteRes.Rating)
+   {
+      whiteDiv.html(whiteRes.Rating);
+      scores = getScoreText(crosstableData.Table[whiteEngineFull].Results[blackEngineFull].Text);
+      whiteSc.html(scores.w.toFixed(1));
+      blackSc.html(scores.b.toFixed(1));
+   }
+
+   if (blackRes.Rating)
+   {
+      blackDiv.html(blackRes.Rating);
+   }
+
+   crosstableData.whiteCurrent = whiteEngineFull;
+   crosstableData.blackCurrent = blackEngineFull;
 
    return 0;
 }
@@ -2506,13 +2499,13 @@ function fixOrder()
             }
          }
       });
-      tiePoints = tiePoints + engine.Wins/(100 * 100);
+      tiePoints = tiePoints + (engine.WinsAsBlack + engine.WinsAsWhite)/(100 * 100);
+      plog ("tiePoints is :" + tiePoints + ", count is :" + arr[count] + " , name is :" + key + ", score:" + engine.Score, debug);
       //tiePoints = tiePoints + engine.WinAsBlack/(100 * 100 * 100);
       tiePoints = tiePoints + engine.Neustadtl/(100 * 100 * 1000);
       tiePoints = tiePoints + engine.Rating/(100 * 100 * 1000 * 1000);
       tiePoints = tiePoints + count/(100 * 100 * 1000 * 1000 * 1000);
       arr[count] = parseFloat(parseFloat(engine.Score) + parseFloat(tiePoints/10));
-      plog ("tiePoints is :" + tiePoints + ", count is :" + arr[count] + " , name is :" + key + ", score:" + engine.Score, debug);
       count = count + 1;
    });
 
@@ -2525,105 +2518,48 @@ function fixOrder()
 
    _.each(crosstableData.Table, function(engine, key) {
       engine.Rank = ranks[count];
-      plog ("engine.Rank-1 is :" + ranks[count] + " ,count:" + count, debug);
+      plog ("engine.Rank-1 is :" + ranks[count] + " ,count:" + count, 1);
       count = count + 1;
       crosstableData.Order[engine.Rank-1] = key;
    });
 }
-
-async function updateCrosstableData(data)
+async function updateCrosstableData()
 {
-   crosstableData = data;
    plog ("Updating crosstable:", 0);
    var abbreviations = [];
    var standings = [];
-   var sleepCount = 0;
-   var retryScore = 0;
 
-   while (oldSchedData == null)
-   {
-      sleepCount = sleepCount + 1;
-      await sleep(500);
-      if (sleepCount > 20)
-      {
-         break;
-      }
+   if (tcecElo) {
+      getOverallElo();
    }
-
-   eliminateCrash(oldSchedData);
-
-   if (tcecElo)
-   {
-      getOverallElo(data);
-   }
-
-   _.each(crosstableData.Order, function(engine, key) {
-      engineDetails = _.get(crosstableData.Table, engine);
-      var getEngRes = getEngRecSched(oldSchedData, engine);
-      wins = (getEngRes.WinAsWhite + getEngRes.WinAsBlack);
-      var loss = 0;
-      if (getEngRes)
-      {
-         loss = (getEngRes.LossAsWhite + getEngRes.LossAsBlack);
-      }
-      engineDetails.Score = getEngRes.Score;
-      engineDetails.Strikes = getEngRes.LossAsStrike;
-      engineDetails.Wins = wins;
-      engineDetails.WinAsBlack = getEngRes.WinAsBlack;
-   });
-
    fixOrder();
 
    _.each(crosstableData.Order, function(engine, key) {
       plog ("ADding entry:" + engine, 1);
       engineDetails = _.get(crosstableData.Table, engine);
-      var getEngRes = getEngRecSched(oldSchedData, engine);
-      wins = (getEngRes.WinAsWhite + getEngRes.WinAsBlack);
-      var loss = 0;
-      if (getEngRes)
+      engineDetails.LossAsWhite = engineDetails.GamesAsWhite - engineDetails.WinsAsWhite;
+      engineDetails.LossAsBlack = 0;
+      engineDetails.LossAsWhite = 0;
+      if (oldSchedData)
       {
-         loss = (getEngRes.LossAsWhite + getEngRes.LossAsBlack);
+         var getEngRes = getEngRecSched(oldSchedData, engine);
+         engineDetails.LossAsBlack = getEngRes.LossAsBlack;
+         engineDetails.LossAsWhite = getEngRes.LossAsWhite;
       }
-      if (engineDetails.eloDiff)
-      {
-         plog ("engine.eloDiff is defined:" + engineDetails.eloDiff, 1);
-         elo = Math.round(engineDetails.eloDiff);
-      }
-      else
-      {
-         elo = Math.round(engineDetails.Elo);
-      }
-      eloDiff = engineDetails.Rating + elo;
-      var dQ = engineDisqualified(engine);
-      if (dQ)
-      {
-         engine = '<div class="right-align strike"><img class="right-align-pic" src="img/engines/'+ getShortEngineName(engine) +'.jpg" />' + '<a class="right-align-name">' + engine + '</a></div>';
-      }
-      else
-      {
-         engine = '<div class="right-align"><img class="right-align-pic" src="img/engines/'+ getShortEngineName(engine) +'.jpg" />' + '<a class="right-align-name">' + engine + '</a></div>';
-      }
-      wins = wins + ' [' + getEngRes.WinAsWhite + '/' + getEngRes.WinAsBlack + ']';
-      //loss = loss + ' [' + getEngRes.LossAsWhite + '/' + getEngRes.LossAsBlack + '/' + getEngRes.LossAsStrike + ']';
-      loss = loss + ' [' + getEngRes.LossAsWhite + '/' + getEngRes.LossAsBlack + ']';
-      engineDetails.Score = getEngRes.Score;
-      if (dQ)
-      {
-         engineDetails.Neustadtl = 0;
-      }
-
+      var eloDiff = getEloDiff(engine, engineDetails.Rating);
       var entry = {
          rank: engineDetails.Rank,
-         name: engine,
-         games: getEngRes.Games,
-         points: getEngRes.Score,
-         wins: wins,
-         loss: loss,
-         crashes: engineDetails.OrigStrikes ? engineDetails.OrigStrikes : engineDetails.Strikes,
+         name: getImg(engine),
+         games: engineDetails.Games,
+         points: engineDetails.Score,
+         wins: engineDetails.WinsAsBlack + engineDetails.WinsAsWhite + ' [' + engineDetails.WinsAsWhite + '/' + engineDetails.WinsAsBlack + ']',
+         loss: engineDetails.LossAsWhite + engineDetails.LossAsBlack + ' [' + engineDetails.LossAsWhite + '/' + engineDetails.LossAsBlack + ']',
+         crashes: engineDetails.Strikes,
          sb: parseFloat(engineDetails.Neustadtl).toFixed(2),
          elo: engineDetails.Rating,
-         elo_diff: elo + ' [' + eloDiff + ']'
+         elo_diff: Math.round(eloDiff) + ' [' + (Math.round(eloDiff) + Math.round(engineDetails.Rating)) + ']'
       };
+
       standings = _.union(standings, [entry]);
    });
 
@@ -2707,14 +2643,13 @@ async function updateCrosstableData(data)
    }
    $('#crosstable').bootstrapTable('load', standings);
 
-   retryScore = updateScoreHeadersData();
-   oldSchedData = null;
    updateStandtableData(crosstableData);
 }
 
 function updateEngRatingData(data)
 {
-   engGlobData = data;
+   engineRatingGlobalData = data;
+   setTimeout(function() { updateCrosstableData(); }, 3000);
 }
 
 function updateTourInfo(data)
@@ -2753,7 +2688,7 @@ function updateCrosstable()
    axios.get('crosstable.json')
    .then(function (response)
    {
-      updateCrosstableData(response.data);
+      updateCrosstableDataMain(response.data);
    })
    .catch(function (error)
    {
@@ -2772,31 +2707,28 @@ function shallowCopy(data)
    return JSON.parse(JSON.stringify(data));
 }
 
-function updateH2hData(h2hdataip)
+function updateH2hData()
 {
-   if (h2hRetryCount < 10 &&
-      ((prevwhiteEngineFullSc != null &&
-         prevwhiteEngineFullSc == whiteEngineFull) &&
-      (prevblackEngineFullSc != null &&
-         blackEngineFull == prevblackEngineFullSc)))
+   if (!oldSchedData)
    {
-      plog ("H2h did not get updated, lets retry later: prevwhiteEngineFull:" +
-         prevwhiteEngineFullSc +
-         " ,whiteEngineFull:" + whiteEngineFull +
-         " ,h2hRetryCount:" + h2hRetryCount +
-         " ,prevblackEngineFull:" + prevblackEngineFullSc + " ,blackEngineFull:" + blackEngineFull, 0);
-      h2hRetryCount = h2hRetryCount + 1;
-      setTimeout(function() { updateH2hData(h2hdataip); }, 5000);
-      return;
-   }
-   else
-   {
-      plog ("H2h got updated", 0);
+      if (h2hRetryCount < 10)
+      {
+         setTimeout(function() { updateH2hData(); }, 5000);
+         plog ("H2h did not get updated:" + h2hRetryCount, 0);
+         h2hRetryCount = h2hRetryCount + 1;
+         return;
+      }
    }
 
+   if ((oldSchedData.WhiteEngCurrent === whiteEngineFull) &&
+      (oldSchedData.BlackEngCurrent === blackEngineFull))
+   {
+      return;
+   }
+
+   plog ("H2h got updated", 0);
+
    h2hRetryCount = 0;
-   prevwhiteEngineFullSc = whiteEngineFull;
-   prevblackEngineFullSc = blackEngineFull;
 
    var h2hdata = [];
    var prevDate = 0;
@@ -2806,7 +2738,7 @@ function updateH2hData(h2hdataip)
    var timezoneDiff = moment().utcOffset() * 60 * 1000 - 3600 * 1000;
    var h2hrank = 0;
    var schedEntry = {};
-   var data = shallowCopy(h2hdataip);
+   var data = shallowCopy(oldSchedData);
 
    _.each(data, function(engine, key)
    {
@@ -2820,10 +2752,8 @@ function updateH2hData(h2hdataip)
             gameDiff = diff/(engine.Game-1);
          }
          momentDate.add(timezoneDiff);
-         engine.Start = momentDate.format('HH:mm:ss on YYYY.MM.DD');
+         engine.Start = getLocalDate(engine.Start);
          prevDate = momentDate;
-         var CurrentDate1 = moment().unix();
-         var CurrentDate2 = moment(engine.Start, 'HH:mm:ss on YYYY.MM.DD').unix();
          //plog ("diff is :" + (CurrentDate2 - CurrentDate1), 0);
       }
       else
@@ -2874,6 +2804,8 @@ function updateH2hData(h2hdataip)
          h2hdata = _.union(h2hdata, [engine]);
       }
    });
+   oldSchedData.WhiteEngCurrent = whiteEngineFull;
+   oldSchedData.BlackEngCurrent = blackEngineFull;
 
    $('#h2h').bootstrapTable('load', h2hdata);
 }
@@ -2951,7 +2883,7 @@ function updateScheduleData(scdatainput)
             gameDiff = diff/(engine.Game-1);
          }
          momentDate.add(timezoneDiff);
-         engine.Start = momentDate.format('HH:mm:ss on YYYY.MM.DD');
+         engine.Start = getLocalDate(engine.Start);
          prevDate = momentDate;
       }
       else
@@ -3059,7 +2991,6 @@ function updateSchedule()
    .then(function (response)
    {
       updateScheduleData(response.data);
-      updateH2hData(response.data);
    })
    .catch(function (error) {
       // handle error
@@ -3257,9 +3188,7 @@ function updateTables()
 {
    updateEngRating();
    updateSchedule();
-   standTableInitialized = false;
    updateCrosstable();
-   updateStandtable();
    readTourInfo();
 }
 
@@ -3493,7 +3422,6 @@ function updateLiveEvalDataHistory(datum, fen, container, contno){
                plog("undefine move" + str);
                return;
             } else {
-
                currentFen = chess.fen();
                newPv = {
                   'from': moveResponse.from,
@@ -3744,6 +3672,7 @@ function updateStandtableData(data)
 {
    plog ("Updating standtable:", 0);
    var standtableData = data;
+   var localStandColumn = standColumns;
 
    var abbreviations = [];
    var standings = [];
@@ -3798,56 +3727,20 @@ function updateStandtableData(data)
       standings = _.union(standings, [entry]);
    });
 
-   if (!standTableInitialized) {
-      columns = [
-      {
-         field: 'rank',
-         title: 'Rank'
-         ,sortable: true
-         ,width: '4%'
-      },
-      {
-         field: 'name',
-         title: 'Engine'
-         ,sortable: true
-         ,width: '18%'
-      },
-      {
-         field: 'points',
-         title: 'Points'
-         ,sortable: true
-         ,width: '7%'
-      }
-      ];
-      _.each(standtableData.Order, function(engine, key) {
-         engineDetails = _.get(standtableData.Table, engine);
-         columns = _.union(columns, [{field: engineDetails.Abbreviation, title: engineDetails.Abbreviation,
+   _.each(standtableData.Order, function(engine, key) {
+      engineDetails = _.get(standtableData.Table, engine);
+      localStandColumn = _.union(localStandColumn,
+         [{field: engineDetails.Abbreviation, title: engineDetails.Abbreviation,
             formatter: formatter, cellStyle: cellformatter}]);
-      });
-
-      $('#standtable').bootstrapTable({
-         columns: columns,
-         classes: 'table table-striped table-no-bordered',
-         sortName: 'rank'
-      });
-
-      standTableInitialized = true;
-   }
-   $('#standtable').bootstrapTable('load', standings);
-}
-
-function updateStandtable()
-{
-   axios.get('crosstable.json')
-   .then(function (response)
-   {
-      //updateStandtableData(response.data);
-   })
-   .catch(function (error)
-   {
-      // handle error
-      console.log(error);
    });
+
+   $('#standtable').bootstrapTable({
+      columns: localStandColumn,
+      classes: 'table table-striped table-no-bordered',
+      sortName: 'rank'
+   });
+
+   $('#standtable').bootstrapTable('load', standings);
 }
 
 function setLastMoveTime(data)
@@ -4860,6 +4753,27 @@ function initTables()
       }
       ]
    });
+
+   standColumns = [
+   {
+      field: 'rank',
+      title: 'Rank'
+      ,sortable: true
+      ,width: '4%'
+   },
+   {
+      field: 'name',
+      title: 'Engine'
+      ,sortable: true
+      ,width: '18%'
+   },
+   {
+      field: 'points',
+      title: 'Points'
+      ,sortable: true
+      ,width: '7%'
+   }
+   ];
 }
 
 function removeClassEngineInfo(cont)
@@ -5067,7 +4981,7 @@ function scheduleToTournamentInfo(schedJson)
       }
    }
    ;
-   data.avgMoves = Math.round(data.avgMoves/schedJson.length);
+   data.avgMoves = Math.round(data.avgMoves/compGames);
 
    let draws = compGames - data.whiteWins - data.blackWins
    data.drawRate = divide2Decimals(draws * 100, compGames) + "%";
@@ -5202,3 +5116,247 @@ function unlistenLog()
 {
    unlistenLogMain('livelog');
 }
+
+function setTwitchChange(data)
+{
+   updateTourInfo(data);
+   twitchChatUrl = 'https://www.twitch.tv/embed/' + data.twitchaccount + '/chat';
+   setTwitchChatUrl(darkMode);
+}
+
+function updateLiveEvalDataOld(datum, update, fen, contno, initial)
+{
+   var container = '#live-eval-cont' + contno;
+
+   if (contno == 1 && !showLivEng1)
+   {
+      $(container).html('');
+      return;
+   }
+   if (contno == 2 && !showLivEng2)
+   {
+      $(container).html('');
+      return;
+   }
+
+   if (!initial && (contno == 1))
+   {
+      board.clearAnnotation();
+      clearedAnnotation = 1;
+   }
+
+   plog ("Annotation did not get cleared" + clearedAnnotation + ",contno:" + contno, 1);
+   if ((clearedAnnotation < 1) && (contno == 2))
+   {
+      board.clearAnnotation();
+   }
+
+   if (contno == 2)
+   {
+      clearedAnnotation = 0;
+   }
+   var engineData = [];
+   livePvs[contno] = [];
+   var livePvsC = livePvs[contno];
+   var score = 0;
+   var tbhits = datum.tbhits;
+
+   if (update && !viewingActiveMove)
+   {
+      return;
+   }
+
+   if (!update)
+   {
+      updateLiveEvalDataHistory(datum, fen, container, contno);
+      return;
+   }
+
+   if (!isNaN(datum.eval))
+   {
+      score = parseFloat(datum.eval);
+   }
+   else
+   {
+      score = datum.eval;
+   }
+
+   if (datum.pv.search(/.*\.\.\..*/i) == 0)
+   {
+      if (!isNaN(score))
+      {
+         score = parseFloat(score) * -1;
+         if (score === 0)
+         {
+            score = 0;
+         }
+      }
+   }
+
+   pvs = [];
+
+   if (datum.pv.length > 0 && datum.pv.trim() != "no info")
+   {
+      var chess = new Chess(activeFen);
+
+      var currentFen = activeFen;
+
+      datum.pv = datum.pv.replace("...", ". .. ");
+      _.each(datum.pv.split(' '), function(move) {
+         if (isNaN(move.charAt(0)) && move != '..') {
+            moveResponse = chess.move(move);
+
+            if (!moveResponse || typeof moveResponse == 'undefined') {
+               plog("undefine move" + move);
+            } else {
+               currentFen = chess.fen();
+               newPv = {
+                  'from': moveResponse.from,
+                  'to': moveResponse.to,
+                  'm': moveResponse.san,
+                  'fen': currentFen
+               };
+
+               currentLastMove = move.slice(-2);
+
+               pvs = _.union(pvs, [newPv]);
+            }
+         }
+      });
+   }
+
+   if (pvs.length > 0) {
+      livePvsC = _.union(livePvsC, [pvs]);
+   }
+
+   if (score > 0) {
+      score = '+' + score;
+   }
+
+   datum.eval = score;
+   datum.tbhits = getTBHits(datum.tbhits);
+   datum.nodes = getNodes(datum.nodes);
+
+   if (datum.pv.length > 0 && datum.pv != "no info") {
+      engineData = _.union(engineData, [datum]);
+   }
+
+   $(container).html('');
+
+   _.each(engineData, function(engineDatum) {
+      if (engineDatum.engine == '')
+      {
+         engineDatum.engine = datum.engine;
+      }
+
+      parseScore = 0.00;
+      if (isNaN(engineDatum.eval)) {
+         parseScore = engineDatum.eval;
+      } else {
+         parseScore = (engineDatum.eval * 1).toFixed(2);
+      }
+
+      var evalStr = getPct(engineDatum.engine, parseScore);
+
+      $(container).append('<h6>' + evalStr + ' PV(A) ' + '</h6><small>[D: ' + engineDatum.depth + ' | TB: ' + engineDatum.tbhits + ' | Sp: ' + engineDatum.speed + ' | N: ' + engineDatum.nodes +']</small>');
+      var moveContainer = [];
+      if (livePvsC.length > 0) {
+         _.each(livePvsC, function(livePv, pvKey) {
+            var moveCount = 0;
+            _.each(engineDatum.pv.split(' '), function(move) {
+               if (isNaN(move.charAt(0)) && move != '..') {
+                  pvLocation = livePvsC[pvKey][moveCount];
+                  if (pvLocation) {
+                     moveContainer = _.union(moveContainer, ["<a href='#' class='set-pv-board' live-pv-key='" + pvKey +
+                        "' move-key='" + moveCount +
+                        "' engine='" + (contno) +
+                        "' color='live'>" + pvLocation.m +
+                        '</a>']);
+                  }
+                  else
+                  {
+                     plog ("pvlocation not defined");
+                  }
+                  moveCount++;
+               } else {
+                  moveContainer = _.union(moveContainer, [move]);
+               }
+            });
+
+            if (boardArrows) {
+               if (pvKey == 0) {
+                  color = 'blue';
+               } else {
+                  color = 'orange';
+               }
+               if (contno == 2)
+               {
+                  color = 'reds';
+               }
+               else
+               {
+                  color = 'blues';
+               }
+               board.addArrowAnnotation(livePv[0].from, livePv[0].to, color, board.orientation());
+            }
+         });
+      }
+      $(container).append('<div class="engine-pv engine-pv-live alert alert-dark">' + moveContainer.join(' ') + '</div>');
+      livePvs[contno] = livePvsC[0];
+   });
+
+
+   // $('#live-eval').bootstrapTable('load', engineData);
+   // handle success
+}
+
+function getImg(engine)
+{
+   return('<div class="right-align"><img class="right-align-pic" src="img/engines/'+ getShortEngineName(engine) +'.jpg" />' + '<a class="right-align-name">' + engine + '</a></div>');
+}
+
+function getEloDiff(engine, ratings)
+{
+   var elodiff = 0;
+   try {
+      if (engineRatingGlobalData && engineRatingGlobalData[engine].elo) {
+         elodiff = engineRatingGlobalData[engine].elo - ratings; 
+      }
+   }
+   catch (err) {
+      elodiff = 0;
+   }
+
+   return elodiff;
+}
+
+function updateCrosstableDataMain(data)
+{
+   crosstableData = data;
+   updateCrosstableData();
+}
+
+function getScoreText(strText)
+{
+   var blackScore = 0;
+   var whiteScore = 0;
+
+   for (var i = 0; i < strText.length; i++)
+   {
+      if (strText.charAt(i) == '0')
+      {
+         blackScore = blackScore + 1;
+      }
+      else if (strText.charAt(i) == '1')
+      {
+         whiteScore = whiteScore + 1;
+      }
+      else if (strText.charAt(i) == '=')
+      {
+         blackScore = blackScore + 0.5;
+         whiteScore = whiteScore + 0.5;
+      }
+   }
+   return {"w":whiteScore, "b": blackScore};
+}
+
