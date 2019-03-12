@@ -77,6 +77,7 @@ var tourInfo = {};
 var btheme = "chess24";
 var ptheme = "chess24";
 var oldSchedData = null;
+var activePvH = [];
 
 var moveFrom = null;
 var moveFromPvW = null
@@ -1526,7 +1527,7 @@ function handlePlyChange(handleclick)
                if (parseInt(livePVHist[yy].moves[xx].ply) == activePly)
                {
                   livePVHist[yy].moves[xx].engine = livePVHist[yy].engine;
-                  plog ("XXX: updating live data:" + activePly, 0);
+                  plog ("XXX: updating live data:" + activePly, 1);
                   updateLiveEvalData(livePVHist[yy].moves[xx], 0, prevMove.fen, yy, 0);
                   break;
                }
