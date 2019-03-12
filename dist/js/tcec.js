@@ -3412,14 +3412,14 @@ function updateLiveEvalDataHistory(datum, fen, container, contno){
       var chess = new Chess(fen);
       var currentFen = fen;
 
-      var split = datum.replace("...","... ").pv.split(' ');
+      var split = datum.pv.replace("...","... ").split(' ');
       var length = split.length;
       for (var i = 0, moveCount = 0; i < length; i++) {
          var str = split[i];
          if (isNaN(str.charAt(0))) {
             moveResponse = chess.move(str);
             if (!moveResponse || typeof moveResponse == 'undefined') {
-               plog("undefine move" + str);
+               plog("undefine move" + str,0);
                return;
             } else {
                currentFen = chess.fen();
@@ -3537,7 +3537,7 @@ function updateLiveEvalData(datum, update, fen, contno, initial) {
       var chess = new Chess(fen);
       var currentFen = fen;
 
-      var split = datum.replace("...","... ").pv.split(' ');
+      var split = datum.pv.replace("...","... ").split(' ');
       var length = split.length;
       for (var i = 0, moveCount = 0; i < length; i++) {
          var str = split[i];
