@@ -1,0 +1,19 @@
+{
+  "ecmaVersion": 6,
+  "libs": [
+    "jquery"
+  ],
+  "loadEagerly": [
+    "dist/js/*.js",
+    "live.html"
+  ],
+  "dontLoad": [
+    "node_modules/**"
+  ],
+  "plugins": {
+    "doc_comment": true,
+    "complete_strings": {
+      "maxLength": 15
+    }
+  }
+}
