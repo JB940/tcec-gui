@@ -210,17 +210,17 @@ function drawEval()
         tooltips: {
 	      callbacks: {
 	            label: function(tooltipItem, data) {
-	            	eval = [];
+	            	evall= [];
 	            	if (typeof data.datasets[0].data[tooltipItem.index] != 'undefined') {
-	            		eval = _.union(eval, ['White Eval: ' + data.datasets[0].data[tooltipItem.index].eval]);
+	            		evall= _.union(evall, ['White Eval: ' + data.datasets[0].data[tooltipItem.index].eval]);
 	            	}
 	            	if (typeof data.datasets[1].data[tooltipItem.index] != 'undefined') {
-	            		eval = _.union(eval, ['Black Eval: ' + data.datasets[1].data[tooltipItem.index].eval]);
+	            		evall= _.union(evall, ['Black Eval: ' + data.datasets[1].data[tooltipItem.index].eval]);
 	            	}
 	            	if (typeof data.datasets[2].data[tooltipItem.index] != 'undefined') {
-	            		eval = _.union(eval, ['Live Eval: ' + data.datasets[2].data[tooltipItem.index].eval]);
+	            		evall= _.union(evall, ['Live Eval: ' + data.datasets[2].data[tooltipItem.index].eval]);
 	            	}
-	               return eval;
+	               return evall;
 	            }
 	      } // end callbacks:
 	    },
@@ -653,7 +653,7 @@ function updateChartData()
                move.cwv = evalconstant;
             }
          }
-         eval = [
+         evall= [
 				{
 					'x': moveNumber,
 					'y': move.cwv,
@@ -716,7 +716,7 @@ function updateChartData()
 				labels = _.union(labels, [moveNumber]);
 				// evalLabels = _.union(evalLabels, [moveNumber]);
 
-				whiteEval = _.union(whiteEval, eval);
+				whiteEval = _.union(whiteEval, evall);
 				// whiteEval = _.union(whiteEval, [{'x': moveNumber + 0.5, 'y': move.wv, 'eval': evaluation}]);
 				whiteTime = _.union(whiteTime, time);
 				whiteSpeed = _.union(whiteSpeed, speed);
@@ -741,7 +741,7 @@ function updateChartData()
 			} else {
 				// evalLabels = _.union(evalLabels, [moveNumber + 0.5]);
 
-				blackEval = _.union(blackEval, eval);
+				blackEval = _.union(blackEval, evall);
 				// blackEval = _.union(blackEval, [{'x': moveNumber + 0.5, 'y': move.wv, 'eval': evaluation}]);
 				blackTime = _.union(blackTime, time);
 				blackSpeed = _.union(blackSpeed, speed);
@@ -835,7 +835,7 @@ function getLiveEval(key, moveNumber, isBlack, contno)
 	});
 
 	if (_.isObject(evalObject)) {
-		eval = evalObject.eval;
+		evall= evalObject.eval;
 		if (!isNaN(evalObject.eval)) {
 	        if (evalObject.eval > evalconstant) {
 	        	evalObject.eval = evalconstant;
@@ -858,7 +858,7 @@ function getLiveEval(key, moveNumber, isBlack, contno)
 				{
 					'x': moveNumber,
 					'y': evalObject.eval,
-					'eval': eval
+					'eval': evall
 				}
 			];
 	}
